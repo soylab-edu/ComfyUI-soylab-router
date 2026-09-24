@@ -1,0 +1,9 @@
+# Development files are not needed when installing the published node.
+tests/
+scripts/
+REGISTRY.md
+assets/social-preview.jpg
+
+# Defense in depth: local credentials must never enter the package.
+API KEY.INI
+pricing_overrides.json

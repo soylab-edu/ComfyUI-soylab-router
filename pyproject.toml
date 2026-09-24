@@ -1,0 +1,14 @@
+[project]
+name = "soylab-comfy-router"
+version = "1.0.0"
+description = "Run Comfy Router image, video, and audio models from one ComfyUI node with provider selection and cost references."
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/soylab-edu/ComfyUI-soylab-router"
+Documentation = "https://github.com/soylab-edu/ComfyUI-soylab-router#readme"
+
+[tool.comfy]
+PublisherId = "soylab-edu"
+DisplayName = "SOYLAB Comfy Router"
+Icon = "https://raw.githubusercontent.com/soylab-edu/ComfyUI-soylab-router/main/web/soylab-logo.png"
