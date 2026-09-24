@@ -14,7 +14,17 @@ This node sends REST requests with Python's standard library. The SDK installati
 
 ## Install
 
-A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required. Until this node is listed in ComfyUI-Manager, install it manually:
+A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required. This node is not yet listed in ComfyUI-Manager.
+
+### Ask ChatGPT Desktop to install it
+
+On the computer running ComfyUI, open a ChatGPT Desktop session that can access local folders and enter this request. If asked for a path, provide the ComfyUI installation you actually use. Restart ComfyUI after installation.
+
+```text
+Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
+```
+
+### Install manually with Git
 
 1. Install [Git](https://git-scm.com/downloads) and locate the **ComfyUI installation you actually use**. For a regular installation, start in the `ComfyUI` directory that contains `main.py`.
 2. Open a terminal there, then copy and run both lines:

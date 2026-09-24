@@ -14,7 +14,17 @@ Python 標準ライブラリから Router REST API を直接呼び出すため�
 
 ## インストールと API キー
 
-V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。ComfyUI-Manager に登録されるまでは、次の手順で手動インストールしてください。
+V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。このノードはまだ ComfyUI-Manager に登録されていません。
+
+### ChatGPT デスクトップアプリでインストールを依頼
+
+ComfyUI があるコンピューターで、ローカルフォルダーにアクセスできる ChatGPT デスクトップのセッションを開き、次の文を入力します。パスを求められたら、実際に使用している ComfyUI フォルダーを指定してください。インストール後に ComfyUI を再起動します。
+
+```text
+Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
+```
+
+### Git で手動インストール
 
 1. [Git](https://git-scm.com/downloads) をインストールし、**実際に使用している ComfyUI のフォルダー**を確認します。通常のインストールでは、`main.py` がある `ComfyUI` フォルダーから始めます。
 2. そのフォルダーでターミナルを開き、次の 2 行をコピーして実行します。

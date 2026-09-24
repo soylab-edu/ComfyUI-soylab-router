@@ -14,7 +14,17 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 
 ## 설치와 API 키
 
-V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다. 아직 ComfyUI-Manager에 등록되지 않았으므로 다음과 같이 수동 설치하세요.
+V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다. 아직 ComfyUI-Manager에 등록되지 않았습니다.
+
+### ChatGPT 데스크톱 앱에서 설치 요청
+
+ComfyUI가 설치된 컴퓨터에서 로컬 폴더에 접근할 수 있는 ChatGPT 데스크톱 세션을 열고 아래 문장을 입력하세요. 설치 경로를 묻는다면 실제로 사용하는 ComfyUI 폴더를 알려주세요. 설치 후 ComfyUI를 재시작합니다.
+
+```text
+Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
+```
+
+### 직접 설치 (Git)
 
 1. [Git](https://git-scm.com/downloads)을 설치하고 **실제로 사용하는 ComfyUI 폴더**를 찾습니다. 일반 설치는 `ComfyUI`, Windows 포터블 설치는 `ComfyUI_windows_portable`입니다.
 2. 일반 설치에서는 `ComfyUI` 폴더(`main.py`가 있는 곳)에서 터미널을 열고 아래 두 줄을 그대로 복사해 실행합니다.

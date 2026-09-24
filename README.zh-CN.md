@@ -14,7 +14,17 @@
 
 ## 安装与 API 密钥
 
-需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本 ComfyUI。在 ComfyUI-Manager 收录本节点之前，请按以下步骤手动安装。
+需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本 ComfyUI。本节点尚未被 ComfyUI-Manager 收录。
+
+### 通过 ChatGPT 桌面应用请求安装
+
+在运行 ComfyUI 的电脑上，打开能够访问本地文件夹的 ChatGPT 桌面会话，输入以下内容。如果要求提供路径，请指定实际使用的 ComfyUI 文件夹。安装后重启 ComfyUI。
+
+```text
+Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
+```
+
+### 使用 Git 手动安装
 
 1. 安装 [Git](https://git-scm.com/downloads)，找到**正在使用的 ComfyUI 安装目录**。普通安装请从包含 `main.py` 的 `ComfyUI` 文件夹开始。
 2. 在该文件夹中打开终端，复制并执行下面两行：
