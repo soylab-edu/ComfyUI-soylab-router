@@ -14,10 +14,33 @@ Python 標準ライブラリから Router REST API を直接呼び出すため�
 
 ## インストールと API キー
 
-1. このリポジトリを `ComfyUI/custom_nodes/ComfyUI-soylab-router` に実フォルダーとしてクローンまたは展開し、ComfyUI を再起動します。V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。
-2. [Comfy 開発者プラットフォーム](https://platform.comfy.org/profile/api-keys?onboarding=router)でワークスペースの API キーを作成し、必要に応じてクレジットを追加します。
-3. ノードの `api_key` 欄に入力するか、INI ボタンで OS のテキストエディターから `API KEY.INI` を編集します。ファイルがなければボタンは **INI ファイルを作成してキーを入力**、あれば **API KEY.INI を開く** と表示されます。ボタンはファイルを作成・開くだけで、キーの内容をブラウザーに返しません。このファイルは Git から除外されています。共有するワークフローでは、保存され得るノード入力欄より INI ファイルの使用を推奨します。
-4. **Soylab / Comfy Router → SOYLAB Comfy Router** を追加し、モデル、プロバイダー、タスクモード、出力設定を選びます。有効な画像・動画・音声出力を保存ノードにつなぎ、実行します。
+V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。ComfyUI-Manager に登録されるまでは、次の手順で手動インストールしてください。
+
+1. [Git](https://git-scm.com/downloads) をインストールし、**実際に使用している ComfyUI のフォルダー**を確認します。通常のインストールでは、`main.py` がある `ComfyUI` フォルダーから始めます。
+2. そのフォルダーでターミナルを開き、次の 2 行をコピーして実行します。
+
+   ```bash
+   cd custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   **Windows Portable：** `run_nvidia_gpu.bat` がある `ComfyUI_windows_portable` フォルダーでコマンドプロンプトを開き、次の 2 行を実行します。
+
+   ```bat
+   cd ComfyUI\custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   すでに `custom_nodes` を開いている場合は `git clone` の行だけ実行します。Windows のエクスプローラーでは、フォルダーのアドレスバーに `cmd` と入力するとコマンドプロンプトが開きます。インストール後は `custom_nodes/ComfyUI-soylab-router` が作成されます。
+
+3. ComfyUI を完全に終了して再起動し、ブラウザーを更新します。起動ログに `import failed` がないことを確認してください。このノードに別途 `requirements.txt` や `pip install` は必要ありません。
+4. [Comfy 開発者プラットフォーム](https://platform.comfy.org/profile/api-keys?onboarding=router)でワークスペースの API キーを作成し、必要に応じてクレジットを追加します。
+5. ノードの `api_key` 欄に入力するか、INI ボタンで OS のテキストエディターから `API KEY.INI` を編集します。ファイルがなければボタンは **INI ファイルを作成してキーを入力**、あれば **API KEY.INI を開く** と表示されます。ボタンはファイルを作成・開くだけで、キーの内容をブラウザーに返しません。このファイルは Git から除外されています。共有するワークフローでは、保存され得るノード入力欄より INI ファイルの使用を推奨します。
+6. **Soylab / Comfy Router → SOYLAB Comfy Router** を追加し、モデル、プロバイダー、タスクモード、出力設定を選びます。有効な画像・動画・音声出力を保存ノードにつなぎ、実行します。
+
+Git でインストール済みの場合は、`ComfyUI-soylab-router` フォルダー内で `git pull` を実行し、ComfyUI を再起動してください。同じ場所に再度クローンしないでください。
+
+ComfyUI-Manager への登録を希望する開発者は、[Comfy Registry 公開手順](REGISTRY.md)をご覧ください。
 
 `workflows` フォルダーには [Seedance 2.5 の画像→動画例](workflows/seedance_2_5_image_to_video.json)と [GPT Image 2 の画像編集例](workflows/image_edit_gpt_image_2.json)があります。[ワークフローメタデータを削除した参照画像](workflows/soylab-reference.png)を ComfyUI の `input` フォルダーにコピーしてください。動画例は画像読み込み→Router→動画保存を接続し、[韓国語](workflows/USAGE.ko.md)・[英語](workflows/USAGE.en.md)の使用方法メモを含みます。API キーは含まれません。
 

@@ -14,10 +14,33 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 
 ## 설치와 API 키
 
-1. 이 저장소를 `ComfyUI/custom_nodes/ComfyUI-soylab-router`에 실제 폴더로 클론하거나 압축 해제하고 ComfyUI를 재시작합니다. V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다.
-2. [Comfy 개발자 플랫폼](https://platform.comfy.org/profile/api-keys?onboarding=router)에서 워크스페이스 API 키를 만들고 필요한 크레딧을 충전합니다.
-3. 노드의 `api_key`에 키를 넣거나, 노드의 INI 버튼을 눌러 운영체제 편집기에서 `API KEY.INI`를 작성합니다. 파일이 없으면 버튼이 **INI 파일 생성 및 키 입력하기**, 있으면 **API KEY.INI 열기**로 표시됩니다. 버튼은 파일을 만들거나 열지만 키 내용은 브라우저로 보내지 않습니다. `API KEY.INI`는 Git에서 제외됩니다. 공유할 워크플로에는 키가 저장될 수 있는 노드 입력 대신 INI 파일을 사용하세요.
-4. **Soylab / Comfy Router → SOYLAB Comfy Router**를 추가하고 모델·공급자·작업 모드·출력 설정을 고릅니다. 활성화된 이미지·비디오·오디오 출력을 저장 노드에 연결한 뒤 실행합니다.
+V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다. 아직 ComfyUI-Manager에 등록되지 않았으므로 다음과 같이 수동 설치하세요.
+
+1. [Git](https://git-scm.com/downloads)을 설치하고 **실제로 사용하는 ComfyUI 폴더**를 찾습니다. 일반 설치는 `ComfyUI`, Windows 포터블 설치는 `ComfyUI_windows_portable`입니다.
+2. 일반 설치에서는 `ComfyUI` 폴더(`main.py`가 있는 곳)에서 터미널을 열고 아래 두 줄을 그대로 복사해 실행합니다.
+
+   ```bash
+   cd custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   **Windows 포터블**에서는 `ComfyUI_windows_portable` 폴더(`run_nvidia_gpu.bat`가 있는 곳)에서 명령 프롬프트를 열고 아래 두 줄을 실행합니다.
+
+   ```bat
+   cd ComfyUI\custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   이미 `custom_nodes` 폴더를 연 경우에는 `cd` 없이 `git clone` 줄만 실행하면 됩니다. Windows 파일 탐색기에서는 해당 폴더의 주소창에 `cmd`를 입력해 명령 프롬프트를 열 수 있습니다. 설치가 끝나면 `custom_nodes/ComfyUI-soylab-router` 폴더가 생깁니다.
+
+3. ComfyUI를 **완전히 종료하고 다시 실행**한 다음 브라우저를 새로고침합니다. 시작 로그에 `import failed`가 없는지 확인하세요. 이 노드는 별도 `requirements.txt`나 `pip install` 단계가 없습니다.
+4. [Comfy 개발자 플랫폼](https://platform.comfy.org/profile/api-keys?onboarding=router)에서 워크스페이스 API 키를 만들고 필요한 크레딧을 충전합니다.
+5. 노드의 `api_key`에 키를 넣거나, 노드의 INI 버튼을 눌러 운영체제 편집기에서 `API KEY.INI`를 작성합니다. 파일이 없으면 버튼이 **INI 파일 생성 및 키 입력하기**, 있으면 **API KEY.INI 열기**로 표시됩니다. 버튼은 파일을 만들거나 열지만 키 내용은 브라우저로 보내지 않습니다. `API KEY.INI`는 Git에서 제외됩니다. 공유할 워크플로에는 키가 저장될 수 있는 노드 입력 대신 INI 파일을 사용하세요.
+6. **Soylab / Comfy Router → SOYLAB Comfy Router**를 추가하고 모델·공급자·작업 모드·출력 설정을 고릅니다. 활성화된 이미지·비디오·오디오 출력을 저장 노드에 연결한 뒤 실행합니다.
+
+Git으로 설치한 기존 폴더는 `ComfyUI-soylab-router` 안에서 `git pull`로 업데이트한 뒤 ComfyUI를 재시작하세요. 같은 폴더에 다시 `git clone`하지 마세요.
+
+ComfyUI-Manager 검색 목록에 등록하려는 개발자는 [Comfy Registry 등록 준비 안내](REGISTRY.md)를 참고하세요.
 
 `workflows` 폴더에는 [Seedance 2.5 이미지→비디오 예시](workflows/seedance_2_5_image_to_video.json)와 [GPT Image 2 이미지 편집 예시](workflows/image_edit_gpt_image_2.json)가 있습니다. 두 예시 모두 [메타데이터를 제거한 참조 이미지](workflows/soylab-reference.png)를 사용하며 API 키는 포함하지 않습니다. 이미지를 ComfyUI의 `input` 폴더에 복사한 뒤 예시를 여세요. 영상 예시에는 이미지 로드·Router·비디오 저장 노드와 [한국어](workflows/USAGE.ko.md)·[영어](workflows/USAGE.en.md) 사용 방법 메모가 연결되어 있습니다.
 

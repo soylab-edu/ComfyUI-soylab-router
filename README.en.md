@@ -14,10 +14,33 @@ This node sends REST requests with Python's standard library. The SDK installati
 
 ## Install
 
-1. Clone or extract this repository as a real folder at `ComfyUI/custom_nodes/ComfyUI-soylab-router`, then restart ComfyUI. A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required.
-2. Create a key at the [Comfy Developer Platform API keys page](https://platform.comfy.org/profile/api-keys?onboarding=router) and add credits to the workspace if needed.
-3. Enter the key in the node's `api_key` field **or** use its local key-file button. When `API KEY.INI` is absent, the button says **Create INI file and enter key**; when present, it says **Open API KEY.INI**. Clicking it creates a private blank file if needed and opens it in the operating system's text editor. The status check returns only whether the file exists, never its contents. You can also copy `API KEY.INI.example` manually. `API KEY.INI` is ignored by Git. A key typed into a node may be saved in a workflow export, so clear that field and use the INI file for shared workflows.
-4. Add **SOYLAB Comfy Router** from **Soylab / Comfy Router**. Choose a model, an available Router provider, resolution and any references. Connect the active `IMAGE`, `VIDEO` or `AUDIO` output to a save node, then queue the workflow.
+A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required. Until this node is listed in ComfyUI-Manager, install it manually:
+
+1. Install [Git](https://git-scm.com/downloads) and locate the **ComfyUI installation you actually use**. For a regular installation, start in the `ComfyUI` directory that contains `main.py`.
+2. Open a terminal there, then copy and run both lines:
+
+   ```bash
+   cd custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   **Windows Portable:** Open Command Prompt in the `ComfyUI_windows_portable` directory containing `run_nvidia_gpu.bat`, then run:
+
+   ```bat
+   cd ComfyUI\custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   If you already opened `custom_nodes`, run only the `git clone` line. In Windows File Explorer, type `cmd` in that folder's address bar to open Command Prompt there. Installation creates `custom_nodes/ComfyUI-soylab-router`.
+
+3. Fully stop and restart ComfyUI, then refresh the browser. Check the startup log for `import failed`. This node has no separate `requirements.txt` or `pip install` step.
+4. Create a key at the [Comfy Developer Platform API keys page](https://platform.comfy.org/profile/api-keys?onboarding=router) and add credits to the workspace if needed.
+5. Enter the key in the node's `api_key` field **or** use its local key-file button. When `API KEY.INI` is absent, the button says **Create INI file and enter key**; when present, it says **Open API KEY.INI**. Clicking it creates a private blank file if needed and opens it in the operating system's text editor. The status check returns only whether the file exists, never its contents. You can also copy `API KEY.INI.example` manually. `API KEY.INI` is ignored by Git. A key typed into a node may be saved in a workflow export, so clear that field and use the INI file for shared workflows.
+6. Add **SOYLAB Comfy Router** from **Soylab / Comfy Router**. Choose a model, an available Router provider, resolution and any references. Connect the active `IMAGE`, `VIDEO` or `AUDIO` output to a save node, then queue the workflow.
+
+If installed with Git, run `git pull` inside `ComfyUI-soylab-router` and restart ComfyUI. Do not clone a second copy into the same folder.
+
+Developers who want a ComfyUI-Manager listing can follow the [Comfy Registry publication checklist](REGISTRY.md).
 
 The `workflows` folder contains a [Seedance 2.5 image-to-video example](workflows/seedance_2_5_image_to_video.json) and a [GPT Image 2 image-editing example](workflows/image_edit_gpt_image_2.json). Both use [the reference image with workflow metadata removed](workflows/soylab-reference.png). Copy the image into ComfyUI's `input` folder before opening a sample. The video sample connects Load Image → Router → Save Video and embeds [Korean](workflows/USAGE.ko.md) and [English](workflows/USAGE.en.md) usage notes. Neither workflow contains an API key.
 

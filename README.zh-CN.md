@@ -14,10 +14,33 @@
 
 ## 安装与 API 密钥
 
-1. 将本仓库克隆或解压为 `ComfyUI/custom_nodes/ComfyUI-soylab-router` 中的真实文件夹，然后重启 ComfyUI。需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本。
-2. 在 [Comfy 开发者平台](https://platform.comfy.org/profile/api-keys?onboarding=router)创建工作区 API 密钥，并按需充值。
-3. 可在节点的 `api_key` 输入密钥，也可点击 INI 按钮，在操作系统的文本编辑器中填写 `API KEY.INI`。文件不存在时，按钮显示 **创建 INI 文件并输入密钥**；已存在时显示 **打开 API KEY.INI**。按钮只创建或打开文件，不会把文件内容返回浏览器。该文件已被 Git 忽略。共享工作流时，建议使用 INI 文件，因为节点输入中的密钥可能保存在工作流导出文件中。
-4. 从 **Soylab / Comfy Router → SOYLAB Comfy Router** 添加节点，选择模型、服务商、任务模式及输出设置。将启用的图像、视频或音频输出连接到保存节点，然后运行工作流。
+需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本 ComfyUI。在 ComfyUI-Manager 收录本节点之前，请按以下步骤手动安装。
+
+1. 安装 [Git](https://git-scm.com/downloads)，找到**正在使用的 ComfyUI 安装目录**。普通安装请从包含 `main.py` 的 `ComfyUI` 文件夹开始。
+2. 在该文件夹中打开终端，复制并执行下面两行：
+
+   ```bash
+   cd custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   **Windows 便携版：** 在包含 `run_nvidia_gpu.bat` 的 `ComfyUI_windows_portable` 文件夹中打开命令提示符，执行：
+
+   ```bat
+   cd ComfyUI\custom_nodes
+   git clone https://github.com/soylab-edu/ComfyUI-soylab-router.git
+   ```
+
+   如果已经打开 `custom_nodes`，只需执行 `git clone` 那一行。在 Windows 文件资源管理器中，可在该文件夹的地址栏输入 `cmd` 打开命令提示符。安装后会生成 `custom_nodes/ComfyUI-soylab-router` 文件夹。
+
+3. 完全退出并重启 ComfyUI，然后刷新浏览器。检查启动日志是否出现 `import failed`。本节点无需额外的 `requirements.txt` 或 `pip install` 步骤。
+4. 在 [Comfy 开发者平台](https://platform.comfy.org/profile/api-keys?onboarding=router)创建工作区 API 密钥，并按需充值。
+5. 可在节点的 `api_key` 输入密钥，也可点击 INI 按钮，在操作系统的文本编辑器中填写 `API KEY.INI`。文件不存在时，按钮显示 **创建 INI 文件并输入密钥**；已存在时显示 **打开 API KEY.INI**。按钮只创建或打开文件，不会把文件内容返回浏览器。该文件已被 Git 忽略。共享工作流时，建议使用 INI 文件，因为节点输入中的密钥可能保存在工作流导出文件中。
+6. 从 **Soylab / Comfy Router → SOYLAB Comfy Router** 添加节点，选择模型、服务商、任务模式及输出设置。将启用的图像、视频或音频输出连接到保存节点，然后运行工作流。
+
+如果此前通过 Git 安装，请在 `ComfyUI-soylab-router` 文件夹中运行 `git pull`，然后重启 ComfyUI。不要在同一位置再次克隆。
+
+希望在 ComfyUI-Manager 中收录节点的开发者可参阅 [Comfy Registry 发布清单](REGISTRY.md)。
 
 `workflows` 文件夹包含 [Seedance 2.5 图像转视频示例](workflows/seedance_2_5_image_to_video.json)和 [GPT Image 2 图像编辑示例](workflows/image_edit_gpt_image_2.json)。请将[已删除工作流元数据的参考图像](workflows/soylab-reference.png)复制到 ComfyUI 的 `input` 文件夹。视频示例连接了加载图像→Router→保存视频，并包含[韩语](workflows/USAGE.ko.md)和[英语](workflows/USAGE.en.md)使用说明。示例不含 API 密钥。
 
