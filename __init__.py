@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from comfy_api.latest import IO, ComfyExtension
 
-from .catalog import ALT_PROVIDERS, BY_LABEL, BY_LEGACY_LABEL, DEFAULT_EXECUTION_PROVIDER, DEFAULT_MODEL_ID, MODELS, model_label
+from .catalog import ALT_PROVIDERS, BY_LABEL, BY_LEGACY_LABEL, DEFAULT_EXECUTION_PROVIDER, DEFAULT_MODEL_ID, MODELS, SEED_AUDIO_VOICES, model_label
 from .media import audio_from_bytes, audio_wav_bytes, image_data_uri, image_from_bytes, video_bytes, video_from_bytes
 from .key_editor import open_key_file
 from .payload import build_payload
@@ -117,6 +117,13 @@ def _model_inputs(spec):
     route_options = ["Comfy", *ALT_PROVIDERS.get(spec.model_id, ())]
     default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
     inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="모델명 앞의 제작사와 다른 개념입니다. Comfy Router가 실제 실행에 사용할 공급자이며 Comfy가 기본 경로입니다.")]
+    if spec.adapter == "seedance":
+        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="작업 모드", default=spec.modes[0], tooltip="auto=자동 · text=텍스트만 · image=첫/마지막 프레임 · reference=참조 미디어 · edit=영상 편집 · extend=영상 연장. image_1은 첫 프레임이 아닙니다."))
+    elif spec.adapter == "seedream" and spec.modes:
+        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="프롬프트 최적화 모드", default=spec.modes[0], tooltip="참조 이미지를 사용할 때 standard=품질 우선, fast=속도 우선. Seedream 5.0 Pro에서 지원합니다."))
+    elif spec.adapter == "seed_audio" and spec.modes:
+        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="참조 모드", default=spec.modes[0], tooltip="auto=연결된 입력에서 판단 · text=텍스트만 · audio=오디오 참조 · image=이미지 참조 · preset_voice=기본 음성"))
+        inputs.append(IO.Combo.Input("preset_voice", options=list(SEED_AUDIO_VOICES), default=next(iter(SEED_AUDIO_VOICES)), tooltip="preset_voice 모드에서 사용할 기본 음성"))
     inputs.append(IO.String.Input("prompt", default="", multiline=True, tooltip="생성 또는 편집 프롬프트"))
     if spec.resolutions:
         inputs.append(IO.Combo.Input("resolution", options=list(spec.resolutions), default=spec.resolutions[0], tooltip="모델에서 지원하는 해상도 또는 크기"))
@@ -127,7 +134,6 @@ def _model_inputs(spec):
     if spec.adapter == "runway_video":
         inputs.append(IO.Int.Input("seed", default=0, min=0, max=4294967295))
     if spec.adapter == "seedance":
-        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), default=spec.modes[0], tooltip="auto=자동 · text=텍스트 · image=첫/마지막 프레임 · reference=참조 · edit=영상 편집 · extend=영상 연장"))
         inputs.append(IO.Image.Input("first_frame", optional=True, tooltip="첫 프레임. image 모드에서는 필수입니다."))
         inputs.append(IO.Image.Input("last_frame", optional=True, tooltip="마지막 프레임. 첫 프레임과 함께 연결하세요."))
         inputs.append(IO.Int.Input("seed", default=0, min=0, max=4294967295))
@@ -163,6 +169,25 @@ def _ordered_values(group):
     if not isinstance(group, dict):
         raise ValueError("참조 입력 형식이 잘못되었습니다.")
     return [value for _, value in sorted(group.items(), key=lambda pair: int(pair[0].rsplit("_", 1)[-1])) if value is not None]
+
+
+async def _prepare_provider_images(spec, provider, payload, key, report):
+    """Give Higgsfield reachable image URLs instead of inline data URIs."""
+    if spec.adapter != "seedance" or provider != "higgsfield":
+        return
+    uploaded = {}
+    for item in payload.get("content", []):
+        image = item.get("image_url")
+        if not isinstance(image, dict):
+            continue
+        uri = image.get("url")
+        if not isinstance(uri, str) or not uri.startswith("data:image/png;base64,"):
+            continue
+        if uri not in uploaded:
+            report("uploading")
+            data = base64.b64decode(uri.split(",", 1)[1], validate=True)
+            uploaded[uri] = await asyncio.to_thread(upload_asset, data, f"soylab-{uuid4().hex}.png", "image/png", key)
+        image["url"] = uploaded[uri]
 
 
 class SoylabComfyRouter(IO.ComfyNode):
@@ -224,6 +249,7 @@ class SoylabComfyRouter(IO.ComfyNode):
         first = image_data_uri(values["first_frame"]) if values.get("first_frame") is not None else None
         last = image_data_uri(values["last_frame"]) if values.get("last_frame") is not None else None
         payload, provider = build_payload(spec, values, images, videos, audios, advanced_json, first_frame=first, last_frame=last)
+        await _prepare_provider_images(spec, provider, payload, key, report)
         result, actual_credits = await asyncio.to_thread(run_model, spec.model_id, payload, key, provider, report, spec.output == "IMAGE")
         report("downloading")
         reference, mime = media_reference(result, spec.output)

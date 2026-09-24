@@ -1,75 +1,62 @@
 # SOYLAB Comfy Router
 
-A local ComfyUI custom node that calls [Comfy Router](https://comfy.org/platform/router) with your personal Comfy API key. The purple node uses the supplied Soylab mark and purple-to-green header. Its two selection controls are **Model** and **Provider**. Model entries show names such as `Runway Gen-4 Turbo Video` and `BytePlus Seedance 2.5`; Provider lists only Router execution paths available for the chosen model. New nodes default to `BytePlus Seedance 2.5` with `higgsfield`. Reference sockets use native `Autogrow` with model-specific caps.
+**언어:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
-This node sends REST requests with Python's standard library. The SDK installations in the Router quickstart (`comfy-sdk`, `@comfyorg/sdk`, or Swift SDK) are alternative examples for other applications and are not required here. The node submits to Router's queue, follows the reported queue and generation state, then collects and downloads the result. If Router reports `403 not_enabled` for the queue, image calls use the synchronous route and label the wait accordingly. Video and audio calls stop before generation rather than risk Router's synchronous 10-minute deadline.
+개인 Comfy API 키로 [Comfy Router](https://comfy.org/platform/router)를 호출하는 **로컬 ComfyUI 커스텀 노드**입니다. 모델과 Router 실행 공급자를 따로 선택하고, 모델에 맞는 이미지·영상·오디오 입력을 연결할 수 있습니다. 새 노드의 기본값은 `BytePlus Seedance 2.5`와 `higgsfield`입니다. 모델별 최대 참조 슬롯은 ComfyUI의 Autogrow로 늘어납니다.
 
-## Install
+Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠른 시작 문서에 나오는 별도 SDK 설치는 필요하지 않습니다. 노드는 작업을 대기열에 제출하고 실제 상태를 확인한 뒤 결과 파일을 내려받습니다. 대기열이 지원되지 않는 이미지 모델만 동기 호출로 대체하며, 긴 영상·오디오 작업은 결과가 사라질 위험을 피하기 위해 중단합니다.
 
-1. Put this repository in `ComfyUI/custom_nodes/soylab_comfy_router` and restart ComfyUI. A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required.
-2. Create a key at the [Comfy Developer Platform API keys page](https://platform.comfy.org/profile/api-keys?onboarding=router) and add credits to the workspace if needed.
-3. Enter the key in the node's `api_key` field **or** use its local key-file button. When `API KEY.INI` is absent, the button says **INI 파일 생성 및 키 입력하기**; when present, it says **API KEY.INI 열기**. Clicking it creates a private blank file if needed and opens it in the operating system's text editor. The status check returns only whether the file exists, never its contents. You can also copy `API KEY.INI.example` manually. `API KEY.INI` is ignored by Git. A key typed into a node may be saved in a workflow export, so clear that field and use the INI file for shared workflows.
-4. Add **SOYLAB Comfy Router** from **Soylab / Comfy Router**. Choose a model, an available Router provider, resolution and any references. Connect the active `IMAGE`, `VIDEO` or `AUDIO` output to a save node, then queue the workflow.
+## 설치와 API 키
 
-The `workflows` folder contains [a GPT Image 2 image-editing example](workflows/image_edit_gpt_image_2.json), with [Korean](workflows/README.ko.md) and [English](workflows/README.en.md) Markdown notes embedded in the graph. Upload any image into `Load Image`; [the full-size sample image](workflows/soylab-sample-image.png) is included. The sample workflow contains no API key.
+1. 이 저장소를 `ComfyUI/custom_nodes/soylab_comfy_router`에 두고 ComfyUI를 재시작합니다. V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다.
+2. [Comfy 개발자 플랫폼](https://platform.comfy.org/profile/api-keys?onboarding=router)에서 워크스페이스 API 키를 만들고 필요한 크레딧을 충전합니다.
+3. 노드의 `api_key`에 키를 넣거나, 노드의 INI 버튼을 눌러 운영체제 편집기에서 `API KEY.INI`를 작성합니다. 파일이 없으면 버튼이 **INI 파일 생성 및 키 입력하기**, 있으면 **API KEY.INI 열기**로 표시됩니다. 버튼은 파일을 만들거나 열지만 키 내용은 브라우저로 보내지 않습니다. `API KEY.INI`는 Git에서 제외됩니다. 공유할 워크플로에는 키가 저장될 수 있는 노드 입력 대신 INI 파일을 사용하세요.
+4. **Soylab / Comfy Router → SOYLAB Comfy Router**를 추가하고 모델·공급자·작업 모드·출력 설정을 고릅니다. 활성화된 이미지·비디오·오디오 출력을 저장 노드에 연결한 뒤 실행합니다.
 
-## Included model families
+`workflows` 폴더에는 [GPT Image 2 이미지 편집 예시](workflows/image_edit_gpt_image_2.json), [한국어](workflows/README.ko.md)와 [영어](workflows/README.en.md) Markdown 설명 노드, [샘플 이미지](workflows/soylab-sample-image.png)가 있습니다. 예시 워크플로에는 API 키가 없습니다.
 
-| Service | Models | Media |
+## 모델과 작업 모드
+
+| 제작사/계열 | 포함 모델 | 주요 출력 |
 | --- | --- | --- |
-| Runway | Gen-4 Turbo Video, Gen-4 Image, Aleph 2 | Image, video |
-| Dreamina | Seedance 2.5 / 2.0 / Fast / Mini; Seedream 5 Pro / Lite | Image, video, audio according to model |
-| OpenAI | GPT Image 2 / 2.5 Flare / 2.5 Sunburst | Image |
-| Google | Nano Banana 2 / 2 Lite / Pro | Image |
-| BytePlus Audio | Seed Audio 1.0 / Multilingual | Image or audio reference; audio output |
+| Runway | Gen-4 Turbo Video, Gen-4 Image, Aleph 2 | 영상·이미지 |
+| BytePlus / Dreamina | Seedance 2.5·2.0·Fast·Mini, Seedream 5 Pro·Lite | 영상·이미지 |
+| OpenAI | GPT Image 2, 2.5 Flare·Sunburst | 이미지 |
+| Google | Nano Banana 2·2 Lite·Pro | 이미지 |
+| BytePlus Audio | Seed Audio 1.0·Multilingual | 오디오 |
 
-The maximum reference sockets are taken from the model's [Router schema](https://docs.comfy.org/development/comfy-router/models) or the matching official ComfyUI Partner node implementation. For example, Seedance 2.5 has 30 image, 10 video and 10 audio reference slots; GPT Image 2 has 16 image slots. Unsupported media outputs are hidden in Nodes 2.0; the registered output types stay fixed for graph compatibility.
+Seedance의 **작업 모드**는 `auto`, `text`, `image`, `reference`입니다. 2.5에는 공식 파트너 노드의 `edit`, `extend`도 있습니다. `image` 모드에는 `first_frame` 입력이 필요하고 `last_frame`을 추가할 수 있습니다. `image_1`은 **참조 이미지**이지 첫 프레임이 아닙니다. `reference`는 참조 미디어, `edit`와 `extend`는 비디오가 필요합니다. 편집은 공식 노드처럼 원본 길이와 비율을 사용합니다. 아직 확인되지 않은 공급자 변환을 피하려고 `edit`와 `extend`는 Comfy 경로에서만 허용합니다.
 
-Seedance controls include `auto`, `text`, `image`, and `reference` modes. Seedance 2.5 additionally has `edit` and `extend`, matching the task types in the installed official Partner node. `image` takes `first_frame` and optionally `last_frame`; `reference` needs a connected reference; `edit` and `extend` need a video reference. Editing follows the Partner node's native `duration=-1` and `ratio=adaptive` behavior. Seedance also exposes seed, watermark, and, for 2.5, MP4/MOV output. The Router's published Seedance schema includes media roles and edit duration but does not explicitly list `omni_reference_task_type`; alternate serving provider translations of `edit` and `extend` are unverified, so the node permits those two modes only on the Comfy route. The node validates basic missing inputs before sending a paid request.
+Seedream 5 Pro는 참조 이미지가 있을 때 `standard`(품질) / `fast`(속도) 프롬프트 최적화 모드를 선택합니다. Seed Audio는 `auto`, `text`, `audio`, `image`, `preset_voice` 참조 모드를 제공하며, 기본 음성 목록은 설치된 공식 파트너 노드의 선택지를 데이터 파일에 기록했습니다. 모드에 맞지 않는 입력은 유료 요청 전에 오류로 알려줍니다. 모델·공급자·모드·슬롯 개수 등 카탈로그 정보는 [`web/router-data.json`](web/router-data.json)에서 관리합니다.
 
-During a run, the node sends short status messages through ComfyUI's native Partner Node progress text channel, shown at the bottom in Nodes 1.0 and 2.0: input preparation, upload, Router submission, queue position, generation, collection, download, and completion. Router publishes only `IN_QUEUE`, `IN_PROGRESS`, and `COMPLETED`; these are real states, not a percent estimate. An image model without queued delivery falls back to one synchronous request, which can show only that it is waiting for the provider. Restart ComfyUI after updating the Python code, then reload the browser when the current workflow has finished.
+Higgsfield 경로의 Seedance 이미지 입력은 해당 업체의 이미지→영상 API가 접근 가능한 URL을 요구하므로 Comfy의 서명된 저장소 URL로 업로드한 뒤 Router에 전달합니다. 다른 경로는 모델 스키마가 허용하는 데이터 URI를 사용합니다. [Router의 Seedance 스키마](https://docs.comfy.org/development/comfy-router/models/byteplus/dreamina-seedance-2-5-260628/code)는 첫 프레임과 참조 이미지의 역할을 구분합니다.
 
-If an older version returned `504 deadline_exceeded` after a long video call, that synchronous request may still have reached its provider and may have been charged. Do not treat the error as proof that nothing was generated, and do not resubmit it automatically. For a photo that must be the exact first frame, select Seedance `image` mode and connect the photo to `first_frame`; a `reference_images` socket has a different role. Set `duration` to the intended length even when the text prompt also names a length. A workflow export or error report can contain a key typed into the node: remove that value, rotate an exposed key, and put the replacement in `API KEY.INI`.
+**첫 프레임을 고정하고 싶다면** `작업 모드: image`를 선택하고 이미지를 `first_frame`에 연결하세요. 프롬프트에 “10초·1080p”라고 써도 노드 설정의 `duration`과 `resolution`이 실제 요청 값입니다. 현재 실패 보고서의 설정은 프롬프트와 달리 **4초·480p**였습니다.
 
-The [Router models list](https://docs.comfy.org/development/comfy-router/models) groups canonical model IDs by their first path segment: `runway/gen4_turbo` and `byteplus/dreamina-seedance-2-5-260628` are valid model IDs. That segment identifies the model's registered provider. The Provider control selects the **serving provider** used for the request: `Comfy` is the default, while other entries use Router's `model_provider` option. The [serving provider coverage](https://docs.comfy.org/development/comfy-router/providers) lists no `Dreamina` alternate route for Seedance 2.5 and no `Runway` alternate route for Gen-4 Turbo. A Runway direct API price in the header is a separate comparison.
+## 공급자와 비용
 
-## Cost display
+모델명 앞의 `Runway` 또는 `BytePlus`는 모델 제작사/등록 계열입니다. **공급자 선택**은 Router가 실제 요청을 실행할 경로입니다. 예를 들어 Seedance 2.5의 Router 경로에는 `Comfy`, `fal`, `higgsfield`, `runware`, `wavespeed`가 있습니다. [공식 공급자 목록](https://docs.comfy.org/development/comfy-router/providers)에 없는 `Dreamina`나 `Runway`를 별도 실행 경로로 만들지 않습니다.
 
-The header shows a **direct maker API price** only where a public pricing rule was verified (currently Runway) and a **Comfy credit estimate** where the installed Partner node's published USD price formula can be mapped to these controls. Comfy's published conversion is **$1 = 211 credits**. For Seedance 2.5 and 2.0, the selected Comfy route also shows estimated credits per second. Click **Router 공급자별 비용 확인** on the node or its header cost badge to open a comparison panel; it updates when the model, route, resolution, duration or ratio changes. Image models with a known Comfy estimate show credits per run.
+상단 가격 표시와 **Router 공급자별 비용 확인** 창은 모델·공급자·해상도·길이 등에 따라 바뀝니다. `Comfy`의 공개 단가는 [공식 파트너 노드 가격표](https://docs.comfy.org/tutorials/partner-nodes/pricing)를 기준으로 추정합니다. 다른 공급자의 **직결 API 가격**은 날짜와 출처를 기록한 비교 자료이며 Router 청구액을 보장하지 않습니다. 달러→크레딧 참고 환산에는 Comfy가 공개한 **$1 = 211 C**를 사용합니다. 실제 **사용 크레딧**은 Router가 `X-Comfy-Credits-Used`를 제공할 때만 표시합니다. 값이 없는 응답을 `0 C`로 처리하지 않으며, 이 경우 Comfy Credit History에서 확인해야 합니다.
 
-[Comfy's official Partner Node price list](https://docs.comfy.org/tutorials/partner-nodes/pricing) gives public rates for the default Comfy route. The [Router catalog API](https://docs.comfy.org/development/comfy-router/reference) lists models and billing behavior but explicitly omits prices and usage, so an alternate route has no documented pre-run quote. The comparison panel displays the official Comfy baseline separately from any selected alternate route and never treats one as the other's price. After a successful call, the header, panel and `COST` output show **사용 크레딧** only when Router supplies `X-Comfy-Credits-Used`. Queued result collection may omit this optional header; in that case the node says to check Comfy Credit History and never treats a missing value as zero. The frontend saves up to 40 known positive model, route and settings credit totals in this browser so a later run can show a clearly labeled previous usage; no API key or prompt is stored in that history. Prior results are not a guaranteed future price.
+가격·모델·공급자·지원 설정을 갱신할 때는 [`web/router-data.json`](web/router-data.json)을 수정합니다. Python 노드와 브라우저 표시가 모두 이 파일을 읽습니다. 가격 출처 URL과 확인 날짜를 함께 기록하세요. 새 모델의 요청·응답 형식이 기존 어댑터와 다르면 코드와 스키마 확인도 필요합니다. 데이터 변경 후 ComfyUI를 재시작하고 브라우저를 새로고침하세요.
 
-Until Router publishes route-specific pre-run prices, [`web/router-data.json`](web/router-data.json) tracks dated, sourced **direct provider API USD reference rates** for comparable settings. For alternate routes, the header converts that direct USD rate using Comfy's published **$1 = 211 credits** rate and displays the estimated **total for the selected duration**. It is not a Router quote or a guaranteed charge. The comparison panel shows the direct API reference separately from an actual Router bill; after a run, an actual Router credit header takes precedence. The Runware Seedance 2.5 reference applies to text-to-video or one connected image/first frame, per Runware's published price; multiple references, video/audio references, edit, and extend have no comparable reference here. A provider's previous actual Router credit usage remains local to the browser; add a Git-tracked Router rate only after its exact settings and billed credits have been independently verified. If Comfy later publishes official route prices, use that source in preference to these direct API comparisons.
+## 실행 상태와 오류
 
-### Maintain model and price data
+노드 하단에는 공식 파트너 노드와 같은 ComfyUI 메시지 경로로 **입력 준비 → 업로드 → Router 전달/대기 → 생성 → 결과 수신 → 다운로드 → 완료** 단계가 표시됩니다. Node 1.0과 2.0에서 같은 서버 메시지를 사용합니다. Router가 제공하는 대기·생성·완료 상태만 보여주며 임의의 퍼센트는 만들지 않습니다.
 
-[`web/router-data.json`](web/router-data.json) is the single editable catalog for model names and IDs, serving providers, media socket limits, supported resolutions, quality options, and pricing rules. Each `models[]` entry contains its `providers` and `pricing` objects. Edit `pricing.comfy` for the published Comfy baseline, `pricing.maker` for the model maker's own API, or `pricing.alternates.<provider>` for a dated direct-provider comparison. Keep the source URL and `checked_at` next to each alternate price, then update the top-level `updated_at`. The Python node controls and browser price display both read this file, so changing existing model or provider data does not require editing calculation code. Restart ComfyUI after editing to rebuild its model and input controls, then reload the browser to refresh the displayed rates. Adding a new model that needs a different native request or response format still requires an adapter implementation and schema verification; a JSON entry alone cannot make an unsupported API request work.
+Router가 `400`으로 요청을 거절하면 모델·공급자·작업 모드, 이미지 슬롯의 역할, 실제 길이/해상도를 확인하세요. 최신 오류에는 가능하면 Router 오류 유형과 요청 ID도 표시합니다. `504 deadline_exceeded`였던 과거 동기식 영상 요청은 업체에 도달해 과금됐을 수도 있으므로 무작정 재실행하지 마세요. 생성 결과는 URL 만료 전에 즉시 내려받고, 공급자의 원본 응답은 `RAW JSON`으로 출력합니다.
 
-Resolution is part of every price lookup. [Higgsfield's app changelog](https://www.higgsfield.company/creator-hub/changelog) confirms Seedance 2.5 generation at 1080p, and the [Router model schema](https://docs.comfy.org/router-schemas/byteplus/dreamina-seedance-2-5-260628.json) accepts 1080p while its [provider coverage](https://docs.comfy.org/development/comfy-router/providers) includes Higgsfield. However, Higgsfield's [public direct API reference](https://open.higgsfield.ai/models/bytedance/seedance-2.5/text-to-video/api-reference) still lists only 480p and 720p and publishes no 1080p direct API price. The node therefore permits Higgsfield 1080p through Router but labels that route and price as unverified until an actual Router run confirms its output and charge; the 480p–720p direct API range is never applied to 1080p. The fal direct API currently documents only 480p and 720p, so this node still blocks fal 1080p. Runware and WaveSpeed references use their published per-resolution rates. Where a model actually offers 4K, such as Seedance 2.0, the [official Partner Node price table](https://docs.comfy.org/tutorials/partner-nodes/pricing) supplies the Comfy 4K token rate; the estimate also uses the selected aspect ratio. The [Runware](https://runware.ai/seedance-2-0) and [WaveSpeed](https://wavespeed.ai/models/bytedance/seedance-2.0/text-to-video) 4K direct API reference rates are recorded separately. Seedance 2.5 does not expose a 4K option in this node.
+현재 목록은 17개 모델을 선별해 구현한 것입니다. [Router 전체 모델 목록](https://docs.comfy.org/development/comfy-router/models)에는 더 많은 모델이 있습니다. 일부 공급자는 공통 스키마에 맞는 입력도 자체 제한으로 거절할 수 있어, 유료 생성 없이 모든 조합의 실제 성공을 보장할 수는 없습니다.
 
-The request uses the documented `POST /v2/models/{provider}/{model}/requests` queue route, with the synchronous model route as the documented `not_enabled` fallback. Optional alternate providers are shown only for canonical models whose published schema advertises them. `advanced_json` merges additional native request fields; it cannot override the model path. Video references that require an HTTPS URL are uploaded through Comfy's signed `/customers/storage` flow using the same API key.
+## 개발·등록
 
-## Current boundaries
+[Router 빠른 시작](https://docs.comfy.org/development/comfy-router/quickstart) · [API 레퍼런스](https://docs.comfy.org/development/comfy-router/reference) · [공식 파트너 노드 소스](https://github.com/Comfy-Org/ComfyUI/tree/master/comfy_api_nodes)
 
-- The dropdown is a curated list of 17 models. The [public Router models page](https://docs.comfy.org/development/comfy-router/models) currently lists many more; each added model needs its own request schema and media handling checked.
-- A provider may reject a reference format or parameter even if the shared Router schema admits it. The API key and credits are needed for a live end-to-end run, which is not included in the repository tests.
-- The audio decoder currently returns PCM WAV; `Seed Audio` requests WAV output. Other audio codecs can be added later.
-- The generated media is downloaded immediately because some provider URLs expire. `RAW JSON` contains the native provider response for inspection.
-
-## Source references
-
-- [Comfy Router quickstart](https://docs.comfy.org/development/comfy-router/quickstart) and [API reference](https://docs.comfy.org/development/comfy-router/reference)
-- [Comfy Router model schemas](https://docs.comfy.org/development/comfy-router/models)
-- [Official ComfyUI Partner node source](https://github.com/Comfy-Org/ComfyUI/tree/master/comfy_api_nodes)
-- [Runway developer pricing](https://docs.dev.runwayml.com/guides/pricing/)
-- [Comfy credit conversion](https://support.comfy.org/articles/5846341390-how-credits-work-in-comfy)
-
-## Verify locally
-
-From this repository directory, use the Python environment that runs ComfyUI and include ComfyUI's source directory on `PYTHONPATH`:
+ComfyUI 실행에 사용하는 Python 환경에서 저장소의 상위 폴더와 ComfyUI 소스를 `PYTHONPATH`에 넣고 테스트할 수 있습니다.
 
 ```bash
 PYTHONPATH="..:/path/to/ComfyUI" python -m unittest discover -s tests -v
 ```
 
-For the official ComfyUI-Manager listing, see the [Comfy Registry publication check](REGISTRY.md). This local node has not been published to the Registry.
+공식 ComfyUI-Manager 등록 조건은 [REGISTRY.md](REGISTRY.md)에 정리했습니다. 이 노드는 아직 Registry에 게시되지 않았습니다.

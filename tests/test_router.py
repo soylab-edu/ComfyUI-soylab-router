@@ -7,8 +7,8 @@ import unittest
 import urllib.error
 from unittest.mock import Mock, patch
 
-from soylab_comfy_router import SoylabComfyRouter, _register_routes, _report_progress, _selection
-from soylab_comfy_router.catalog import ALT_PROVIDERS, BY_ID, BY_LABEL, MODELS, find_model
+from soylab_comfy_router import SoylabComfyRouter, _prepare_provider_images, _register_routes, _report_progress, _selection
+from soylab_comfy_router.catalog import ALT_PROVIDERS, BY_ID, BY_LABEL, MODELS, SEED_AUDIO_VOICES, find_model
 from soylab_comfy_router.key_editor import open_key_file
 from soylab_comfy_router.payload import build_payload
 from soylab_comfy_router.result import media_reference
@@ -30,6 +30,8 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(provider.display_name, "공급자 선택")
         self.assertEqual(provider.options, ["Comfy", "fal", "higgsfield", "runware", "wavespeed"])
         self.assertEqual(provider.default, "higgsfield")
+        self.assertEqual(model.options[0].inputs[1].display_name, "작업 모드")
+        self.assertEqual(model.options[0].inputs[1].options, ["auto", "text", "image", "reference", "edit", "extend"])
         spec, values = _selection({"model": model.options[0].key, "execution_provider": "higgsfield"})
         self.assertEqual(spec.model_id, "byteplus/dreamina-seedance-2-5-260628")
         self.assertEqual(values["execution_provider"], "higgsfield")
@@ -74,6 +76,35 @@ class CatalogTests(unittest.TestCase):
 
 
 class PayloadTests(unittest.TestCase):
+    def test_partner_modes_for_seedream_and_seed_audio(self):
+        pro = find_model("Dreamina", "Seedream", "5.0 Pro")
+        payload, _ = build_payload(pro, {"prompt": "edit", "mode": "fast"}, ["data:image/png;base64,AQ=="], [], [])
+        self.assertEqual(payload["optimize_prompt_options"], {"mode": "fast"})
+        with self.assertRaisesRegex(ValueError, "참조 이미지"):
+            build_payload(pro, {"prompt": "make", "mode": "fast"}, [], [], [])
+        audio = find_model("BytePlus Audio", "Seed Audio", "1.0")
+        voice = next(iter(SEED_AUDIO_VOICES))
+        payload, _ = build_payload(audio, {"prompt": "Hello", "mode": "preset_voice", "preset_voice": voice}, [], [], [])
+        self.assertEqual(payload["references"], [{"speaker": SEED_AUDIO_VOICES[voice]}])
+        payload, _ = build_payload(audio, {"prompt": "Hello", "mode": "audio"}, [], [], ["data:audio/wav;base64,AQ=="])
+        self.assertEqual(payload["references"], [{"audio_data": "AQ=="}])
+        with self.assertRaisesRegex(ValueError, "오디오만"):
+            build_payload(audio, {"prompt": "Hello", "mode": "audio"}, ["data:image/png;base64,AQ=="], [], [])
+
+    def test_higgsfield_seedance_images_use_uploaded_urls(self):
+        spec = find_model("Dreamina", "Seedance", "2.5")
+        uri = "data:image/png;base64,AQ=="
+        payload, provider = build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "480p"}, [uri], [], [], first_frame=uri)
+        with patch("soylab_comfy_router.upload_asset", return_value="https://example.org/signed.png") as upload:
+            stages = []
+            asyncio.run(_prepare_provider_images(spec, provider, payload, "private-key", lambda stage: stages.append(stage)))
+        self.assertEqual(upload.call_count, 1)
+        self.assertEqual(stages, ["uploading"])
+        self.assertEqual([part["image_url"]["url"] for part in payload["content"] if part["type"] == "image_url"], ["https://example.org/signed.png"] * 2)
+        comfy_payload, _ = build_payload(spec, {"prompt": "move", "resolution": "480p"}, [uri], [], [])
+        asyncio.run(_prepare_provider_images(spec, "Comfy", comfy_payload, "private-key", lambda _: None))
+        self.assertEqual(comfy_payload["content"][1]["image_url"]["url"], uri)
+
     def test_gpt_image_edit_includes_connected_image(self):
         spec = find_model("OpenAI", "GPT Image", "2")
         payload, provider = build_payload(spec, {"prompt": "Edit it", "resolution": "1024x1024", "quality": "low"}, ["data:image/png;base64,AQ=="], [], [])
@@ -133,6 +164,13 @@ class ResultTests(unittest.TestCase):
 
 
 class RouterClientTests(unittest.TestCase):
+    def test_invalid_request_exposes_safe_router_error_type_and_request_id(self):
+        error = urllib.error.HTTPError("https://api.comfy.org", 400, "invalid", {"X-Comfy-Error-Type": "invalid_input", "X-Comfy-Request-Id": "req-123"}, None)
+        error.read = lambda _: b'{"detail":"The request was rejected as invalid for this model."}'
+        with patch("soylab_comfy_router.router.urllib.request.urlopen", side_effect=error):
+            with self.assertRaisesRegex(RuntimeError, r"HTTP 400 \[invalid_input\].*request_id: req-123"):
+                run_model("byteplus/dreamina-seedance-2-5-260628", {"content": []}, "private-key", "higgsfield")
+
     def test_queued_route_reports_progress_and_actual_cost(self):
         class Response:
             def __init__(self, body, headers=None):

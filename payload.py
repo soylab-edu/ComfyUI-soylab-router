@@ -2,7 +2,7 @@
 
 import json
 
-from .catalog import ALT_PROVIDERS, ALT_PROVIDER_RESOLUTIONS, ModelSpec
+from .catalog import ALT_PROVIDERS, ALT_PROVIDER_RESOLUTIONS, ModelSpec, SEED_AUDIO_VOICES
 
 
 def _default(values: dict, key: str, fallback):
@@ -99,6 +99,13 @@ def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list
         payload = {"prompt": prompt, "size": resolution, "response_format": "url"}
         if images:
             payload["image"] = images[0] if len(images) == 1 else images
+        mode = values.get("mode") or "standard"
+        if spec.modes and mode not in spec.modes:
+            raise ValueError(f"{spec.model_id}: {mode} 프롬프트 최적화 모드는 Not Support입니다.")
+        if mode == "fast":
+            if not images:
+                raise ValueError("Seedream fast 프롬프트 최적화 모드에는 참조 이미지가 필요합니다.")
+            payload["optimize_prompt_options"] = {"mode": "fast"}
     elif spec.adapter == "gpt_image":
         payload = {"prompt": prompt, "size": resolution, "quality": values.get("quality", "low"), "n": 1}
         if images:
@@ -113,13 +120,30 @@ def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list
             image_config["aspectRatio"] = ratio
         payload = {"contents": [{"role": "user", "parts": parts}], "generationConfig": {"responseModalities": ["TEXT", "IMAGE"], "imageConfig": image_config}}
     elif spec.adapter == "seed_audio":
-        if images and audios:
-            raise ValueError("Seed Audio는 이미지와 오디오 참조를 동시에 받을 수 없습니다.")
-        references = []
-        if images:
+        mode = values.get("mode") or "auto"
+        if mode not in spec.modes:
+            raise ValueError(f"{spec.model_id}: {mode} 참조 모드는 Not Support입니다.")
+        if mode == "auto":
+            mode = "image" if images else "audio" if audios else "text"
+        if mode == "text" and (images or audios):
+            raise ValueError("Seed Audio text 모드는 참조 미디어를 사용하지 않습니다.")
+        if mode == "image" and (len(images) != 1 or audios):
+            raise ValueError("Seed Audio image 모드에는 이미지 한 장만 연결하세요.")
+        if mode == "audio" and (not audios or images):
+            raise ValueError("Seed Audio audio 모드에는 오디오만 1~3개 연결하세요.")
+        if mode == "preset_voice" and (images or audios):
+            raise ValueError("Seed Audio preset_voice 모드에서는 참조 미디어 연결을 해제하세요.")
+        if mode == "image":
             references = [{"image_data": images[0].split(",", 1)[1]}]
-        else:
+        elif mode == "audio":
             references = [{"audio_data": audio.split(",", 1)[1]} for audio in audios]
+        elif mode == "preset_voice":
+            voice = values.get("preset_voice") or next(iter(SEED_AUDIO_VOICES))
+            if voice not in SEED_AUDIO_VOICES:
+                raise ValueError(f"Seed Audio 기본 음성 {voice}은(는) Not Support입니다.")
+            references = [{"speaker": SEED_AUDIO_VOICES[voice]}]
+        else:
+            references = []
         payload = {"text_prompt": prompt, "audio_config": {"format": "wav", "sample_rate": 24000}}
         if references:
             payload["references"] = references

@@ -17,11 +17,14 @@ class RouterError(RuntimeError):
 
 
 class RouterHTTPError(RouterError):
-    def __init__(self, status, error_type, message, retry_after=None):
+    def __init__(self, status, error_type, message, retry_after=None, request_id=None):
         self.status = status
         self.error_type = error_type
         self.retry_after = retry_after
-        super().__init__(f"Comfy Router HTTP {status}: {message}")
+        self.request_id = request_id
+        kind = f" [{error_type}]" if error_type else ""
+        trace = f" · request_id: {request_id}" if request_id else ""
+        super().__init__(f"Comfy Router HTTP {status}{kind}: {message}{trace}")
 
 
 def _read_limited(response, limit=MAX_RESPONSE_BYTES):
@@ -67,7 +70,7 @@ def _open_router(request, timeout):
         if isinstance(detail, list):
             detail = "; ".join(str(item.get("msg", item)) if isinstance(item, dict) else str(item) for item in detail)
         error_type = exc.headers.get("X-Comfy-Error-Type") or parsed.get("error_type")
-        raise RouterHTTPError(exc.code, error_type, str(detail)[:1000], exc.headers.get("Retry-After")) from None
+        raise RouterHTTPError(exc.code, error_type, str(detail)[:1000], exc.headers.get("Retry-After"), exc.headers.get("X-Comfy-Request-Id")) from None
     except urllib.error.URLError as exc:
         raise RouterError(f"Comfy Router 연결 오류: {exc.reason}") from None
 

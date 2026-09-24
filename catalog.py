@@ -47,6 +47,7 @@ BY_ID = {spec.model_id: spec for spec in MODELS}
 BY_SELECTION = {(spec.service, spec.family, spec.version): spec for spec in MODELS}
 DEFAULT_MODEL_ID = DATA["default_model_id"]
 DEFAULT_EXECUTION_PROVIDER = DATA["default_provider"]
+SEED_AUDIO_VOICES = DATA.get("seed_audio_voices", {})
 
 
 def model_label(spec: ModelSpec) -> str:
