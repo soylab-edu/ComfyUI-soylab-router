@@ -20,16 +20,19 @@ class CatalogTests(unittest.TestCase):
         schema = SoylabComfyRouter.define_schema()
         model = schema.inputs[1]
         self.assertEqual(model.id, "model")
-        self.assertEqual(model.options[0].key, "Dreamina / Seedance 2.5")
+        self.assertEqual(model.options[0].key, "BytePlus Seedance 2.5")
         provider = model.options[0].inputs[0]
-        self.assertEqual(provider.display_name, "Router 실행 공급자")
+        self.assertEqual(provider.display_name, "공급자 선택")
         self.assertEqual(provider.options, ["Comfy", "fal", "higgsfield", "runware", "wavespeed"])
         self.assertEqual(provider.default, "higgsfield")
         spec, values = _selection({"model": model.options[0].key, "execution_provider": "higgsfield"})
         self.assertEqual(spec.model_id, "byteplus/dreamina-seedance-2-5-260628")
         self.assertEqual(values["execution_provider"], "higgsfield")
-        runway = next(option for option in model.options if option.key == "Runway / Gen-4 Turbo Video")
+        runway = next(option for option in model.options if option.key == "Runway Gen-4 Turbo Video")
         self.assertEqual(runway.inputs[0].default, "Comfy")
+        self.assertEqual(runway.inputs[0].options, ["Comfy"])
+        legacy, _ = _selection({"model": "Dreamina / Seedance 2.5", "execution_provider": "higgsfield"})
+        self.assertEqual(legacy.model_id, spec.model_id)
 
     def test_reference_limit_is_enforced(self):
         spec = BY_ID["byteplus/dreamina-seedance-2-5-260628"]
@@ -112,7 +115,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual([nodes[n]["type"] for n in (1, 2, 3)], ["LoadImage", "SoylabComfyRouter", "SaveImage"])
         self.assertEqual(len([node for node in nodes.values() if node["type"] == "MarkdownNote"]), 2)
         self.assertEqual(nodes[2]["widgets_values_named"]["api_key"], "")
-        self.assertEqual(nodes[2]["widgets_values_named"]["model"], "OpenAI / GPT Image 2")
+        self.assertEqual(nodes[2]["widgets_values_named"]["model"], "OpenAI GPT Image 2")
         self.assertEqual(len(workflow["links"]), 2)
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[4]["widgets_values"][0])
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[5]["widgets_values"][0])

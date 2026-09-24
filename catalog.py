@@ -53,10 +53,12 @@ BY_SELECTION = {(spec.service, spec.family, spec.version): spec for spec in MODE
 
 
 def model_label(spec: ModelSpec) -> str:
-    return f"{spec.service} / {spec.family} {spec.version}"
+    brand = "BytePlus" if spec.family == "Seedance" else spec.service
+    return f"{brand} {spec.family} {spec.version}"
 
 
 BY_LABEL = {model_label(spec): spec for spec in MODELS}
+BY_LEGACY_LABEL = {f"{spec.service} / {spec.family} {spec.version}": spec for spec in MODELS}
 
 # The per-model OpenAPI documents advertise these under
 # x-comfy-router-alt-providers. An empty entry means Comfy is the only route.

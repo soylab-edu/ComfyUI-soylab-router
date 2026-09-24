@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from comfy_api.latest import IO, ComfyExtension
 
-from .catalog import ALT_PROVIDERS, BY_LABEL, MODELS, model_label
+from .catalog import ALT_PROVIDERS, BY_LABEL, BY_LEGACY_LABEL, MODELS, model_label
 from .media import audio_from_bytes, audio_wav_bytes, image_data_uri, image_from_bytes, video_bytes, video_from_bytes
 from .payload import build_payload
 from .result import media_reference
@@ -60,7 +60,7 @@ def _media_inputs(spec):
 def _model_inputs(spec):
     route_options = ["Comfy", *ALT_PROVIDERS.get(spec.model_id, ())]
     default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
-    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="Router 실행 공급자", default=default_provider, tooltip="Comfy Router 안에서 이 모델을 실행할 공급자입니다. 모델 제작사의 직접 API와는 별개입니다.")]
+    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="Comfy Router에서 실제로 선택 가능한 실행 경로입니다. Comfy가 기본 경로입니다.")]
     inputs.append(IO.String.Input("prompt", default="", multiline=True, tooltip="생성 또는 편집 프롬프트"))
     if spec.resolutions:
         inputs.append(IO.Combo.Input("resolution", options=list(spec.resolutions), default=spec.resolutions[0], tooltip="모델에서 지원하는 해상도 또는 크기"))
@@ -89,9 +89,10 @@ def _selection(model_data: dict):
     if not isinstance(model_data, dict):
         raise ValueError("모델을 선택하세요.")
     label = model_data.get("model")
-    if label not in BY_LABEL:
+    spec = BY_LABEL.get(label) or BY_LEGACY_LABEL.get(label)
+    if spec is None:
         raise ValueError(f"Not Support: {label}")
-    return BY_LABEL[label], model_data
+    return spec, model_data
 
 
 def _ordered_values(group):

@@ -9,6 +9,7 @@ const HEADER_GRADIENT = `linear-gradient(90deg, ${HEADER_PURPLE} 0%, #3D6574 50%
 const BODY_BG = "#1E1B25";
 const FOOTER_BG = "#28173E";
 const COST_BUTTON_BG = "#422670";
+const COMFY_CREDITS_PER_USD = 211;
 const PRICE_HISTORY_KEY = "soylab.router.priceHistory.v1";
 const logo = new Image();
 const logoUrl = new URL("./soylab-logo.png", import.meta.url);
@@ -59,7 +60,10 @@ function directReference(node, spec, route) {
   const totalDollars = (value) => `$${value.toFixed(2)}`;
   const rateText = range[0] === range[1] ? rateDollars(range[0]) : `${rateDollars(range[0])}–${rateDollars(range[1])}`;
   const totalText = range[0] === range[1] ? totalDollars(range[0] * duration) : `${totalDollars(range[0] * duration)}–${totalDollars(range[1] * duration)}`;
-  return { rateText, totalText, source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
+  const credits = (value) => (value * COMFY_CREDITS_PER_USD).toFixed(1);
+  const creditRateText = `${credits(range[0])}${range[0] === range[1] ? "" : `–${credits(range[1])}`} C`;
+  const creditTotalText = `${credits(range[0] * duration)}${range[0] === range[1] ? "" : `–${credits(range[1] * duration)}`} C`;
+  return { rateText, totalText, creditRateText, creditTotalText, source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
 }
 
 fetch(new URL("./catalog.json", import.meta.url))
@@ -83,17 +87,18 @@ function widget(node, name) {
 }
 
 function modelLabel(spec) {
-  return `${spec.service} / ${spec.family} ${spec.version}`;
+  const brand = spec.family === "Seedance" ? "BytePlus" : spec.service;
+  return `${brand} ${spec.family} ${spec.version}`;
 }
 
 function inputPrefix(node) {
-  return widget(node, "model")?.value?.includes(" / ") ? "model" : "service.model.version";
+  return widget(node, "model") ? "model" : "service.model.version";
 }
 
 function selected(node) {
   const label = widget(node, "model")?.value;
   const spec = inputPrefix(node) === "model"
-    ? catalog.find((item) => modelLabel(item) === label)
+    ? catalog.find((item) => modelLabel(item) === label || `${item.service} / ${item.family} ${item.version}` === label)
     : catalog.find((item) => item.service === widget(node, "service")?.value
       && item.family === widget(node, "service.model")?.value
       && item.version === widget(node, "service.model.version")?.value);
@@ -119,7 +124,7 @@ function comfyQuote(node, spec) {
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", "16:9"));
   const hasVideo = refCount(node, "videos") > 0;
-  const credits = (value) => value * 211;
+  const credits = (value) => value * COMFY_CREDITS_PER_USD;
   if (id === "runway/gen4_turbo") {
     return { perSecond: credits(.0715), total: credits(.0715 * duration), source: "Comfy Partner node" };
   }
@@ -196,13 +201,13 @@ function estimate(node, spec) {
     if (comfyUsd !== null) comfyUsd += refCount(node, "images") * (is25 ? .0117 : .0098);
   } else if (id.includes("dreamina-seedance-2-5")) {
     const quote = comfyQuote(node, spec);
-    comfyRange = quote ? [quote.total / 211, (quote.maxTotal ?? quote.total) / 211] : null;
+    comfyRange = quote ? [quote.total / COMFY_CREDITS_PER_USD, (quote.maxTotal ?? quote.total) / COMFY_CREDITS_PER_USD] : null;
   } else if (id.includes("dreamina-seedance-2-0")) {
     const quote = comfyQuote(node, spec);
-    comfyRange = quote ? [quote.total / 211, (quote.maxTotal ?? quote.total) / 211] : null;
+    comfyRange = quote ? [quote.total / COMFY_CREDITS_PER_USD, (quote.maxTotal ?? quote.total) / COMFY_CREDITS_PER_USD] : null;
   }
   const actual = node.properties?.soylabActualCredits;
-  const providerText = direct === null ? "" : `${spec.service} 직결 ${typeof direct === "string" ? direct : usd(direct)}`;
+  const providerText = direct === null ? "" : `${spec.service} API 참고 ${typeof direct === "string" ? direct : usd(direct)}`;
   let comfyText = "Comfy 예상 확인 불가";
   const observed = observedCost(node, spec, execution);
   const directRef = execution === "Comfy" ? null : directReference(node, spec, execution);
@@ -212,19 +217,19 @@ function estimate(node, spec) {
     comfyText = `${execution} 최근 실측 ${observed.credits.toFixed(1)} C`;
   } else if (execution !== "Comfy") {
     comfyText = directRef
-      ? `${execution} 직결 참고 ${directRef.rateText}/초`
+      ? `${execution} 직결가 환산 약 ${directRef.creditRateText}/초`
       : `${execution} Router 사전 단가 미공개`;
   } else if (comfyUsd !== null && Number.isFinite(comfyUsd)) {
-    comfyText = `Comfy 약 ${(comfyUsd * 211).toFixed(1)} C`;
+    comfyText = `Comfy 약 ${(comfyUsd * COMFY_CREDITS_PER_USD).toFixed(1)} C`;
   } else if (comfyRange) {
-    const low = (comfyRange[0] * 211).toFixed(0);
-    const high = (comfyRange[1] * 211).toFixed(0);
+    const low = (comfyRange[0] * COMFY_CREDITS_PER_USD).toFixed(0);
+    const high = (comfyRange[1] * COMFY_CREDITS_PER_USD).toFixed(0);
     comfyText = `Comfy 약 ${low}${low === high ? "" : `–${high}`} C`;
   }
   return {
     provider: providerText,
     comfy: comfyText,
-    estimatedCredits: Number.isFinite(comfyUsd) ? comfyUsd * 211 : comfyRange ? comfyRange[0] * 211 : null,
+    estimatedCredits: Number.isFinite(comfyUsd) ? comfyUsd * COMFY_CREDITS_PER_USD : comfyRange ? comfyRange[0] * COMFY_CREDITS_PER_USD : null,
   };
 }
 
@@ -280,7 +285,7 @@ function refreshPricePopup() {
   const selectedRate = route !== "Comfy" && observed
     ? `최근 같은 설정 ${priceText(observed.credits)}`
     : route !== "Comfy" && directRef
-      ? `직결 참고 ${directRef.totalText} · Router 요금 미공개`
+      ? `직결 ${directRef.totalText} · 직결가 환산 약 ${directRef.creditTotalText}`
     : route === "Comfy" && quote
     ? `${priceText(quote.perSecond)}/초`
     : route === "Comfy" && Number.isFinite(estimateInfo.estimatedCredits)
@@ -308,7 +313,7 @@ function refreshPricePopup() {
     const rate = known ? `Comfy ${priceText(quote.perSecond)}/초` : estimated ? `Comfy 약 ${priceText(estimateInfo.estimatedCredits)}/회` : outside ? `직결 ${outside.rateText}/초 · ${outside.totalText} 참고` : "공개 참고 없음";
     const total = known
       ? quote.maxTotal == null ? `약 ${priceText(quote.total)}` : `약 ${priceText(quote.total)}–${priceText(quote.maxTotal)}`
-      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : "사전 요금 미공개";
+      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : outside ? `직결가 환산 약 ${outside.creditTotalText}` : "사전 요금 미공개";
     row.append(line("td", "", provider));
     const rateCell = line("td", "", rate);
     if (outside?.source) {
@@ -329,7 +334,7 @@ function refreshPricePopup() {
   if (actual != null && node.properties?.soylabActualSignature === priceSignature(node, spec, route)) {
     pricePopup.append(line("div", "soylab-price-actual", `최근 실행 실제 사용량: ${priceText(Number(actual))}`));
   }
-  pricePopup.append(line("p", "soylab-price-note", `직결 USD 참고 가격은 각 업체 API 페이지를 ${pricing.updated_at || "최근"}에 확인해 Git에 기록한 값으로, Router의 Comfy 크레딧 청구액이 아닙니다. Comfy 기준은 공식 Partner Node 가격표의 참고값입니다. Router는 다른 공급자의 사전 요금을 공개하지 않습니다. 최근 실측은 이 브라우저의 이전 실행 기록이며 입력 내용에 따라 달라질 수 있습니다.`));
+  pricePopup.append(line("p", "soylab-price-note", `직결 USD 가격은 각 업체 API 페이지를 ${pricing.updated_at || "최근"}에 확인해 Git에 기록했습니다. 직결가 환산 크레딧은 $1 = ${COMFY_CREDITS_PER_USD} C 기준의 참고값이며 Router의 실제 청구액을 보장하지 않습니다. Comfy 기본 경로는 공식 Partner Node 가격표의 참고값입니다. Router는 다른 공급자의 사전 요금을 공개하지 않습니다. 최근 실측은 이 브라우저의 이전 실행 기록이며 입력 내용에 따라 달라질 수 있습니다.`));
   if (directRef?.note) pricePopup.append(line("p", "soylab-price-note", `${route} 참고 가격은 제공 페이지 내부의 표기 차이가 있어 범위로 표시합니다.`));
   const pricingLink = document.createElement("a");
   pricingLink.href = "https://docs.comfy.org/tutorials/partner-nodes/pricing";
@@ -342,7 +347,13 @@ function refreshPricePopup() {
   source.target = "_blank";
   source.rel = "noopener noreferrer";
   source.textContent = "Router 요금 응답 설명 ↗";
-  pricePopup.append(source);
+  pricePopup.append(source, document.createTextNode("  ·  "));
+  const conversion = document.createElement("a");
+  conversion.href = "https://support.comfy.org/articles/5846341390-how-credits-work-in-comfy";
+  conversion.target = "_blank";
+  conversion.rel = "noopener noreferrer";
+  conversion.textContent = "크레딧 환산 기준 ↗";
+  pricePopup.append(conversion);
 }
 
 function openPricePopup(node) {
@@ -422,6 +433,9 @@ function syncVueNode(id) {
   const price = estimate(node, spec);
   const label = [price.provider, price.comfy].filter(Boolean).join("  |  ");
   if (badge.textContent !== label) badge.textContent = label;
+  badge.title = price.comfy.includes("직결가 환산")
+    ? "외부 직접 API 가격을 $1 = 211 Comfy 크레딧으로 환산한 참고값입니다. 실제 Router 청구액은 실행 후 확인하세요."
+    : "Router 실행 공급자별 비용 비교 열기";
 
   const providerRow = host.querySelector('[aria-label="execution_provider"]')?.closest(".lg-node-widget");
   if (providerRow) {
@@ -440,7 +454,7 @@ function syncVueNode(id) {
       : route !== "Comfy" && observed
         ? `${route} 최근 같은 설정 ${priceText(observed.credits)} · 사전 단가는 미공개`
         : route !== "Comfy" && directRef
-          ? `${route} 직결 참고 ${directRef.rateText}/초 · Router 청구액은 별도`
+          ? `${route} 직결 ${directRef.rateText}/초 · 직결가 환산 약 ${directRef.creditRateText}/초`
         : route !== "Comfy" && quote
           ? `${route} 사전 단가 미공개 · Comfy 기준 약 ${priceText(quote.total)} (선택 경로 요금 아님)`
           : `${route} 사전 단가 미공개 · 공식 가격표 링크는 비용 창에서 확인`;
