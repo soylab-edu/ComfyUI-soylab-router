@@ -16,6 +16,28 @@ from soylab_comfy_router.router import run_model
 
 
 class CatalogTests(unittest.TestCase):
+    def test_comfy_locale_files_cover_the_node_and_visible_price_copy(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        required_inputs = {"api_key", "model", "model_execution_provider", "model_mode", "model_prompt", "model_resolution", "model_ratio", "model_duration", "model_first_frame", "model_last_frame", "advanced_json"}
+        for language in ("ko", "en", "ja", "zh"):
+            with self.subTest(language=language):
+                node = json.loads((root / "locales" / language / "nodeDefs.json").read_text(encoding="utf-8"))["SoylabComfyRouter"]
+                self.assertTrue(node["description"])
+                self.assertTrue(required_inputs.issubset(node["inputs"]))
+                self.assertTrue(all(node["inputs"][name]["tooltip"] for name in required_inputs))
+                self.assertEqual(set(node["outputs"]), {"0", "1", "2", "3", "4"})
+
+        catalog = json.loads((root / "web/router-data.json").read_text(encoding="utf-8"))
+        for model in catalog["models"]:
+            for route in model.get("providers", []):
+                for note in route.get("resolution_notes", {}).values():
+                    self.assertEqual(set(note.get("text_i18n", {})), {"en", "ja", "zh"})
+            for entry in model.get("pricing", {}).get("alternates", {}).values():
+                if "range_scope" in entry:
+                    self.assertEqual(set(entry.get("range_scope_i18n", {})), {"en", "ja", "zh"})
+                if "public_reference" in entry:
+                    self.assertEqual(set(entry["public_reference"].get("label_i18n", {})), {"en", "ja", "zh"})
+
     def test_ids_and_selections_are_unique(self):
         self.assertEqual(len(MODELS), len({item.model_id for item in MODELS}))
         self.assertEqual(len(MODELS), len({(item.service, item.family, item.version) for item in MODELS}))
@@ -60,13 +82,20 @@ class CatalogTests(unittest.TestCase):
                 self.assertTrue(set(route.get("resolutions", ())).issubset(BY_ID[model_id].resolutions))
             for name, entry in model["pricing"]["alternates"].items():
                 self.assertIn(name, ALT_PROVIDERS.get(model_id, ()))
+                if "public_reference" in entry:
+                    reference = entry["public_reference"]
+                    self.assertTrue(reference["label"])
+                    self.assertTrue(reference["source"].startswith("https://"))
+                    self.assertLessEqual(reference["checked_at"], data["updated_at"])
+                    continue
                 self.assertTrue(entry["source"].startswith("https://"))
                 self.assertLessEqual(entry["checked_at"], data["updated_at"])
                 references = entry["reference_inputs"]
                 if references is not False:
-                    self.assertEqual(name, "runware")
-                    self.assertEqual(model_id, "byteplus/dreamina-seedance-2-5-260628")
-                    self.assertEqual(references, {"images": 1, "videos": 0, "audios": 0, "last_frame": False})
+                    self.assertLessEqual(references["images"], BY_ID[model_id].images)
+                    self.assertLessEqual(references["videos"], BY_ID[model_id].videos)
+                    self.assertLessEqual(references["audios"], BY_ID[model_id].audios)
+                    self.assertIsInstance(references["last_frame"], bool)
                 self.assertTrue(set(entry.get("priced_resolutions", ())).issubset(BY_ID[model_id].resolutions))
                 if "range_scope" in entry:
                     self.assertIn("range", entry)
@@ -255,9 +284,9 @@ class KeyEditorTests(unittest.TestCase):
     def test_progress_uses_native_partner_node_message_channel(self):
         server = SimpleNamespace(send_sync=Mock(), send_progress_text=Mock())
         _report_progress(server, "14", "submitting")
-        server.send_progress_text.assert_called_with("SOYLAB Router · Router 서버에 요청 전송 중", "14")
-        _report_progress(server, "14", "queued", request_id="request-1", queue_position=2)
-        server.send_progress_text.assert_called_with("SOYLAB Router · Router에 전달 완료 · 대기 중 · 앞에 2건", "14")
+        server.send_progress_text.assert_called_with("SOYLAB Router (2/5) · Router 서버에 요청 전송 중 · 0초 경과", "14")
+        _report_progress(server, "14", "queued", elapsed_seconds=9, request_id="request-1", queue_position=2)
+        server.send_progress_text.assert_called_with("SOYLAB Router (3/5) · Router에 전달 완료 · 대기 중 · 앞에 2건 · 9초 경과", "14")
         server.send_sync.assert_called_with("soylab_router_status", {"node_id": "14", "stage": "queued", "request_id": "request-1", "queue_position": 2})
 
     def test_creates_private_blank_ini_without_overwriting_existing_key(self):

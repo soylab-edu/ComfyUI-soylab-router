@@ -4,13 +4,15 @@
 
 这是一个使用个人 Comfy API 密钥调用 [Comfy Router](https://comfy.org/platform/router) 的**本地 ComfyUI 自定义节点**。模型与 Router 的实际执行服务商分别选择，并可根据模型连接图像、视频和音频。新节点默认选择 `BytePlus Seedance 2.5` 和 `higgsfield`。参考输入接口通过 ComfyUI 的 Autogrow 增加，数量不超过对应模型的上限。
 
+节点说明、输入提示和费用窗口会跟随 ComfyUI 的 **设置 → 语言**（`Comfy.Locale`）在韩语、英语、日语和简体中文之间切换。未设置语言时默认使用韩语。安装翻译文件后请重启 ComfyUI 并刷新浏览器。模型名称和供应商 ID 保留 API 原始拼写。
+
 节点使用 Python 标准库直接请求 Router REST API，因此无需安装快速入门文档中的额外 SDK。它会提交排队任务、查询实际状态并下载生成结果。仅在图像模型不支持队列时改用同步请求；耗时的视频和音频任务则在提交前停止，避免同步请求超时后丢失结果。
 
 ## 安装与 API 密钥
 
 1. 将本仓库放入 `ComfyUI/custom_nodes/soylab_comfy_router`，然后重启 ComfyUI。需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本。
 2. 在 [Comfy 开发者平台](https://platform.comfy.org/profile/api-keys?onboarding=router)创建工作区 API 密钥，并按需充值。
-3. 可在节点的 `api_key` 输入密钥，也可点击 INI 按钮，在操作系统的文本编辑器中填写 `API KEY.INI`。文件不存在时，按钮显示 **INI 파일 생성 및 키 입력하기**（创建 INI 文件并填写密钥）；已存在时显示 **API KEY.INI 열기**（打开 API KEY.INI）。按钮只创建或打开文件，不会把文件内容返回浏览器。该文件已被 Git 忽略。共享工作流时，建议使用 INI 文件，因为节点输入中的密钥可能保存在工作流导出文件中。
+3. 可在节点的 `api_key` 输入密钥，也可点击 INI 按钮，在操作系统的文本编辑器中填写 `API KEY.INI`。文件不存在时，按钮显示 **创建 INI 文件并输入密钥**；已存在时显示 **打开 API KEY.INI**。按钮只创建或打开文件，不会把文件内容返回浏览器。该文件已被 Git 忽略。共享工作流时，建议使用 INI 文件，因为节点输入中的密钥可能保存在工作流导出文件中。
 4. 从 **Soylab / Comfy Router → SOYLAB Comfy Router** 添加节点，选择模型、服务商、任务模式及输出设置。将启用的图像、视频或音频输出连接到保存节点，然后运行工作流。
 
 `workflows` 文件夹包含 [GPT Image 2 图像编辑示例](workflows/image_edit_gpt_image_2.json)、工作流内的[韩语](workflows/README.ko.md)与[英语](workflows/README.en.md) Markdown 说明，以及[示例图像](workflows/soylab-sample-image.png)。示例工作流不含 API 密钥。

@@ -1,0 +1,323 @@
+{
+  "SoylabComfyRouter": {
+    "display_name": "SOYLAB Comfy Router",
+    "description": "使用个人 API 密钥运行 Comfy Router 模型。输入会随所选模型变化。",
+    "inputs": {
+      "api_key": {
+        "name": "API 密钥",
+        "tooltip": "留空时从 API KEY.INI 读取。在此输入的密钥可能保存在工作流中。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "选择模型。下方的供应商是 Router 执行路径。"
+      },
+      "execution_provider": {
+        "name": "供应商",
+        "tooltip": "Comfy Router 实际执行请求的供应商，与模型开发商不同。"
+      },
+      "model_execution_provider": {
+        "name": "供应商",
+        "tooltip": "Comfy Router 实际执行请求的供应商，与模型开发商不同。"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "选择所选模型的操作或参考模式。可用选项因模型而异。"
+      },
+      "model_mode": {
+        "name": "模式",
+        "tooltip": "选择所选模型的操作或参考模式。可用选项因模型而异。"
+      },
+      "preset_voice": {
+        "name": "预设声音",
+        "tooltip": "在 preset_voice 模式下使用的声音。"
+      },
+      "model_preset_voice": {
+        "name": "预设声音",
+        "tooltip": "在 preset_voice 模式下使用的声音。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "生成或编辑提示词。"
+      },
+      "model_prompt": {
+        "name": "提示词",
+        "tooltip": "生成或编辑提示词。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "所选模型和路径支持的分辨率或尺寸。"
+      },
+      "model_resolution": {
+        "name": "分辨率",
+        "tooltip": "所选模型和路径支持的分辨率或尺寸。"
+      },
+      "ratio": {
+        "name": "画面比例",
+        "tooltip": "模型支持的画面比例。"
+      },
+      "model_ratio": {
+        "name": "画面比例",
+        "tooltip": "模型支持的画面比例。"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "视频时长（秒）。"
+      },
+      "model_duration": {
+        "name": "时长",
+        "tooltip": "视频时长（秒）。"
+      },
+      "first_frame": {
+        "name": "首帧",
+        "tooltip": "image 模式下必填，与 image_1 分开。"
+      },
+      "model_first_frame": {
+        "name": "首帧",
+        "tooltip": "image 模式下必填，与 image_1 分开。"
+      },
+      "last_frame": {
+        "name": "尾帧",
+        "tooltip": "与首帧一起连接。"
+      },
+      "model_last_frame": {
+        "name": "尾帧",
+        "tooltip": "与首帧一起连接。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子。"
+      },
+      "model_seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子。"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "在支持时添加水印。"
+      },
+      "model_watermark": {
+        "name": "水印",
+        "tooltip": "在支持时添加水印。"
+      },
+      "generate_audio": {
+        "name": "生成音频",
+        "tooltip": "为视频生成音频。"
+      },
+      "model_generate_audio": {
+        "name": "生成音频",
+        "tooltip": "为视频生成音频。"
+      },
+      "output_format": {
+        "name": "输出格式",
+        "tooltip": "选择输出文件格式。"
+      },
+      "model_output_format": {
+        "name": "输出格式",
+        "tooltip": "选择输出文件格式。"
+      },
+      "quality": {
+        "name": "画质",
+        "tooltip": "选择模型支持的画质。"
+      },
+      "model_quality": {
+        "name": "画质",
+        "tooltip": "选择模型支持的画质。"
+      },
+      "reference_images": {
+        "name": "参考图像",
+        "tooltip": "连接数量不超过模型支持上限。"
+      },
+      "model_reference_images": {
+        "name": "参考图像",
+        "tooltip": "连接数量不超过模型支持上限。"
+      },
+      "reference_videos": {
+        "name": "参考视频",
+        "tooltip": "连接数量不超过模型支持上限。"
+      },
+      "model_reference_videos": {
+        "name": "参考视频",
+        "tooltip": "连接数量不超过模型支持上限。"
+      },
+      "reference_audios": {
+        "name": "参考音频",
+        "tooltip": "连接数量不超过模型支持上限。"
+      },
+      "model_reference_audios": {
+        "name": "参考音频",
+        "tooltip": "连接数量不超过模型支持上限。"
+      },
+      "advanced_json": {
+        "name": "高级 JSON",
+        "tooltip": "所选模型的附加原生 JSON 参数。model 字段在 URL 中指定。"
+      },
+      "model_reference_images_image_1": {
+        "name": "参考图像 1"
+      },
+      "model_reference_images_image_2": {
+        "name": "参考图像 2"
+      },
+      "model_reference_images_image_3": {
+        "name": "参考图像 3"
+      },
+      "model_reference_images_image_4": {
+        "name": "参考图像 4"
+      },
+      "model_reference_images_image_5": {
+        "name": "参考图像 5"
+      },
+      "model_reference_images_image_6": {
+        "name": "参考图像 6"
+      },
+      "model_reference_images_image_7": {
+        "name": "参考图像 7"
+      },
+      "model_reference_images_image_8": {
+        "name": "参考图像 8"
+      },
+      "model_reference_images_image_9": {
+        "name": "参考图像 9"
+      },
+      "model_reference_images_image_10": {
+        "name": "参考图像 10"
+      },
+      "model_reference_images_image_11": {
+        "name": "参考图像 11"
+      },
+      "model_reference_images_image_12": {
+        "name": "参考图像 12"
+      },
+      "model_reference_images_image_13": {
+        "name": "参考图像 13"
+      },
+      "model_reference_images_image_14": {
+        "name": "参考图像 14"
+      },
+      "model_reference_images_image_15": {
+        "name": "参考图像 15"
+      },
+      "model_reference_images_image_16": {
+        "name": "参考图像 16"
+      },
+      "model_reference_images_image_17": {
+        "name": "参考图像 17"
+      },
+      "model_reference_images_image_18": {
+        "name": "参考图像 18"
+      },
+      "model_reference_images_image_19": {
+        "name": "参考图像 19"
+      },
+      "model_reference_images_image_20": {
+        "name": "参考图像 20"
+      },
+      "model_reference_images_image_21": {
+        "name": "参考图像 21"
+      },
+      "model_reference_images_image_22": {
+        "name": "参考图像 22"
+      },
+      "model_reference_images_image_23": {
+        "name": "参考图像 23"
+      },
+      "model_reference_images_image_24": {
+        "name": "参考图像 24"
+      },
+      "model_reference_images_image_25": {
+        "name": "参考图像 25"
+      },
+      "model_reference_images_image_26": {
+        "name": "参考图像 26"
+      },
+      "model_reference_images_image_27": {
+        "name": "参考图像 27"
+      },
+      "model_reference_images_image_28": {
+        "name": "参考图像 28"
+      },
+      "model_reference_images_image_29": {
+        "name": "参考图像 29"
+      },
+      "model_reference_images_image_30": {
+        "name": "参考图像 30"
+      },
+      "model_reference_videos_video_1": {
+        "name": "参考视频 1"
+      },
+      "model_reference_videos_video_2": {
+        "name": "参考视频 2"
+      },
+      "model_reference_videos_video_3": {
+        "name": "参考视频 3"
+      },
+      "model_reference_videos_video_4": {
+        "name": "参考视频 4"
+      },
+      "model_reference_videos_video_5": {
+        "name": "参考视频 5"
+      },
+      "model_reference_videos_video_6": {
+        "name": "参考视频 6"
+      },
+      "model_reference_videos_video_7": {
+        "name": "参考视频 7"
+      },
+      "model_reference_videos_video_8": {
+        "name": "参考视频 8"
+      },
+      "model_reference_videos_video_9": {
+        "name": "参考视频 9"
+      },
+      "model_reference_videos_video_10": {
+        "name": "参考视频 10"
+      },
+      "model_reference_audios_audio_1": {
+        "name": "参考音频 1"
+      },
+      "model_reference_audios_audio_2": {
+        "name": "参考音频 2"
+      },
+      "model_reference_audios_audio_3": {
+        "name": "参考音频 3"
+      },
+      "model_reference_audios_audio_4": {
+        "name": "参考音频 4"
+      },
+      "model_reference_audios_audio_5": {
+        "name": "参考音频 5"
+      },
+      "model_reference_audios_audio_6": {
+        "name": "参考音频 6"
+      },
+      "model_reference_audios_audio_7": {
+        "name": "参考音频 7"
+      },
+      "model_reference_audios_audio_8": {
+        "name": "参考音频 8"
+      },
+      "model_reference_audios_audio_9": {
+        "name": "参考音频 9"
+      },
+      "model_reference_audios_audio_10": {
+        "name": "参考音频 10"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像"
+      },
+      "1": {
+        "name": "视频"
+      },
+      "2": {
+        "name": "音频"
+      },
+      "3": {
+        "name": "RAW JSON"
+      },
+      "4": {
+        "name": "COST"
+      }
+    }
+  }
+}

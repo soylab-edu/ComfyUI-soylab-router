@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { routerLocale, routerText } from "./i18n.js";
 
 const NODE_ID = "SoylabComfyRouter";
 const TITLE = "SOYLAB Comfy Router";
@@ -9,8 +10,8 @@ const HEADER_GRADIENT = `linear-gradient(90deg, ${HEADER_PURPLE} 0%, #3D6574 50%
 const BODY_BG = "#1E1B25";
 const FOOTER_BG = "#28173E";
 const COST_BUTTON_BG = "#422670";
-const KEY_BUTTON_EXISTS = "API KEY.INI 열기";
-const KEY_BUTTON_MISSING = "INI 파일 생성 및 키 입력하기";
+const tr = (key, values) => routerText(app, key, values);
+const keyLabels = ["API KEY.INI 열기", "INI 파일 생성 및 키 입력하기", "Open API KEY.INI", "Create INI file and enter key", "API KEY.INI を開く", "INI ファイルを作成してキーを入力", "打开 API KEY.INI", "创建 INI 文件并输入密钥"];
 let COMFY_CREDITS_PER_USD = NaN;
 const PRICE_HISTORY_KEY = "soylab.router.priceHistory.v1";
 const logo = new Image();
@@ -60,8 +61,17 @@ function routeResolutions(spec, route) {
   return spec?.providers?.find((item) => item.name === route)?.resolutions || null;
 }
 
+function localizedField(item, key) {
+  return item?.[`${key}_i18n`]?.[routerLocale(app)] || item?.[key] || "";
+}
+
+function comfyReferenceLabel(spec) {
+  return localizedField(spec?.pricing?.comfy_reference, "label");
+}
+
 function routeResolutionNote(spec, route, resolution) {
-  return spec?.providers?.find((item) => item.name === route)?.resolution_notes?.[resolution] || null;
+  const note = spec?.providers?.find((item) => item.name === route)?.resolution_notes?.[resolution];
+  return note ? { ...note, text: localizedField(note, "text") } : null;
 }
 
 function directReference(node, spec, route) {
@@ -75,7 +85,7 @@ function directReference(node, spec, route) {
   const allowed = entry.reference_inputs;
   if (allowed === false) {
     if (firstFrame || lastFrame || images || videos || audios) return null;
-  } else if (!allowed || images + Number(firstFrame) + Number(lastFrame) > allowed.images || videos > allowed.videos || audios > allowed.audios || (lastFrame && !allowed.last_frame)) {
+  } else if (!allowed || images > allowed.images || Number(firstFrame) + Number(lastFrame) > (allowed.frames ?? allowed.images) || videos > allowed.videos || audios > allowed.audios || (lastFrame && !allowed.last_frame)) {
     return null;
   }
   const duration = Number(field(node, "duration", 0));
@@ -94,7 +104,7 @@ function directReference(node, spec, route) {
   const credits = (value) => (value * COMFY_CREDITS_PER_USD).toFixed(1);
   const creditRateText = `${credits(range[0])}${range[0] === range[1] ? "" : `–${credits(range[1])}`} C`;
   const creditTotalText = `${credits(range[0] * duration)}${range[0] === range[1] ? "" : `–${credits(range[1] * duration)}`} C`;
-  return { rateText, totalText, creditRateText, creditTotalText, duration, rangeScope: entry.range_scope || "", source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
+  return { rateText, totalText, creditRateText, creditTotalText, duration, rangeScope: localizedField(entry, "range_scope"), source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
 }
 
 function directResolutionNotice(node, spec, route) {
@@ -104,8 +114,13 @@ function directResolutionNotice(node, spec, route) {
   if (note?.text) return note.text;
   const supported = routeResolutions(spec, route);
   return entry && supported && !supported.includes(resolution)
-    ? `${route} 현재 노드의 ${resolution} 경로 미지원 (공개 API: ${supported.join("·")})`
+    ? tr("resolutionUnsupported", { provider: route, resolution, supported: supported.join("·") })
     : "";
+}
+
+function publicReference(spec, route) {
+  const reference = pricing.models?.[spec?.model_id]?.[route]?.public_reference;
+  return reference ? { ...reference, label: localizedField(reference, "label") } : null;
 }
 
 fetch(new URL("./router-data.json", import.meta.url), { cache: "no-store" })
@@ -126,7 +141,14 @@ function widget(node, name) {
 }
 
 function keyButtonLabel() {
-  return keyFileExists === false ? KEY_BUTTON_MISSING : KEY_BUTTON_EXISTS;
+  return tr(keyFileExists === false ? "keyCreate" : "keyOpen");
+}
+
+function syncKeyPlaceholder(node, host) {
+  const input = widget(node, "api_key")?.inputEl;
+  const fields = [input, input?.querySelector?.("input"), host?.querySelector?.('input[aria-label="api_key"]'), host?.querySelector?.('[aria-label="api_key"] input')];
+  const label = tr("keyPlaceholder");
+  for (const field of fields) if (field?.placeholder != null && field.placeholder !== label) field.placeholder = label;
 }
 
 function syncKeyButtons() {
@@ -180,7 +202,7 @@ function refCount(node, type) {
 }
 
 function usd(value) {
-  return Number.isFinite(value) ? `$${value.toFixed(value < 0.1 ? 3 : 2)}` : "확인 불가";
+  return Number.isFinite(value) ? `$${value.toFixed(value < 0.1 ? 3 : 2)}` : tr("estimateUnavailable");
 }
 
 function comfyQuote(node, spec) {
@@ -238,39 +260,72 @@ function comfyQuote(node, spec) {
 }
 
 function estimate(node, spec) {
-  if (!spec) return { provider: "", comfy: "모델을 선택하세요" };
+  if (!spec) return { provider: "", comfy: tr("pickModelShort") };
   const duration = Number(field(node, "duration", 5));
   const execution = String(field(node, "execution_provider", "Comfy"));
   const maker = spec.pricing?.maker;
-  const makerPrice = maker?.type === "usd_per_second" ? usd(maker.rate * duration) : maker?.value || "";
+  const makerPrice = maker?.type === "usd_per_second" ? usd(maker.rate * duration) : localizedField(maker, "value");
   const quote = comfyQuote(node, spec);
   const actual = node.properties?.soylabActualCredits;
-  const providerText = makerPrice ? `${spec.service} API 참고 ${makerPrice}` : "";
-  let comfyText = "Comfy 예상 확인 불가";
+  const providerText = makerPrice ? tr("makerReference", { maker: spec.service, price: makerPrice }) : "";
+  let comfyText = tr("estimateUnavailable");
   const observed = observedCost(node, spec, execution);
   const directRef = execution === "Comfy" ? null : directReference(node, spec, execution);
+  const published = execution === "Comfy" ? null : publicReference(spec, execution);
   const resolutionNotice = execution === "Comfy" ? "" : directResolutionNotice(node, spec, execution);
   const sameRunWithoutCredits = actual == null && node.properties?.soylabActualSignature === priceSignature(node, spec, execution)
     && node.properties?.soylabActualModel === spec.model_id && node.properties?.soylabActualProvider === execution;
   if (actual != null && Number.isFinite(Number(actual)) && node.properties?.soylabActualSignature === priceSignature(node, spec, execution)) {
-    comfyText = `사용 크레딧 ${Number(actual).toFixed(2)} C`;
+    comfyText = tr("actualInline", { credits: `${Number(actual).toFixed(2)} C` });
   } else if (sameRunWithoutCredits) {
-    comfyText = `${execution} 사용 크레딧: Credit History 확인`;
+    comfyText = tr("historyCheck", { provider: execution });
   } else if (execution !== "Comfy" && observed) {
-    comfyText = `${execution} 최근 사용 크레딧 ${observed.credits.toFixed(1)} C`;
+    comfyText = tr("recent", { credits: `${observed.credits.toFixed(1)} C` });
   } else if (execution !== "Comfy") {
     comfyText = directRef
-      ? `${execution} 직결 API 참고 총 약 ${directRef.creditTotalText}/${directRef.duration}초`
-      : resolutionNotice || `${execution} Router 사전 단가 미공개`;
+      ? tr("directTotal", { provider: execution, credits: directRef.creditTotalText, seconds: directRef.duration, scope: directRef.rangeScope ? ` · ${directRef.rangeScope}` : "" })
+      : resolutionNotice || (published ? tr("directPublished", { provider: execution, label: published.label }) : tr("providerPreRunUnavailable", { provider: execution }));
   } else if (quote) {
     const low = quote.total.toFixed(1);
     const high = quote.maxTotal == null ? low : quote.maxTotal.toFixed(1);
-    comfyText = `Comfy 약 ${low}${low === high ? "" : `–${high}`} C`;
+    comfyText = tr("comfyEstimate", { credits: `${low}${low === high ? "" : `–${high}`}` });
+  } else if (execution === "Comfy" && spec.pricing?.comfy_reference) {
+    comfyText = tr("comfyReference", { label: comfyReferenceLabel(spec) });
   }
   return { provider: providerText, comfy: comfyText, estimatedCredits: quote?.total ?? null };
 }
 
 let pricePopup = null;
+let pricePopupObserver = null;
+
+function closePricePopup() {
+  pricePopupObserver?.disconnect();
+  pricePopupObserver = null;
+  pricePopup?.remove();
+  pricePopup = null;
+}
+
+function makePricePopupDraggable(handle) {
+  handle.onpointerdown = (event) => {
+    if (event.button !== 0 || event.target.closest("button, a")) return;
+    event.preventDefault();
+    const popup = pricePopup;
+    const bounds = popup.getBoundingClientRect();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    popup.style.left = `${bounds.left}px`;
+    popup.style.top = `${bounds.top}px`;
+    popup.style.right = "auto";
+    handle.setPointerCapture(event.pointerId);
+    handle.onpointermove = (move) => {
+      const left = Math.min(Math.max(0, bounds.left + move.clientX - startX), Math.max(0, innerWidth - popup.offsetWidth));
+      const top = Math.min(Math.max(0, bounds.top + move.clientY - startY), Math.max(0, innerHeight - popup.offsetHeight));
+      popup.style.left = `${left}px`;
+      popup.style.top = `${top}px`;
+    };
+    handle.onpointerup = handle.onpointercancel = () => { handle.onpointermove = null; };
+  };
+}
 
 function priceText(value) {
   return `${value.toFixed(1)} C`;
@@ -280,8 +335,7 @@ function refreshPricePopup() {
   if (!pricePopup) return;
   const node = app.graph?.getNodeById?.(Number(pricePopup.dataset.nodeId));
   if (node?.type !== NODE_ID) {
-    pricePopup.remove();
-    pricePopup = null;
+    closePricePopup();
     return;
   }
   const { spec } = selected(node);
@@ -290,6 +344,7 @@ function refreshPricePopup() {
   const estimateInfo = estimate(node, spec);
   const observed = observedCost(node, spec, route);
   const directRef = directReference(node, spec, route);
+  const published = publicReference(spec, route);
   const resolutionNotice = directResolutionNotice(node, spec, route);
   const duration = Number(field(node, "duration", 5));
   const resolution = String(field(node, "resolution", ""));
@@ -301,7 +356,7 @@ function refreshPricePopup() {
   const actualForSelection = actualCredits != null && Number.isFinite(Number(actualCredits))
     && node.properties?.soylabActualSignature === priceSignature(node, spec || {}, route)
     && node.properties?.soylabActualModel === spec?.model_id && node.properties?.soylabActualProvider === route;
-  const signature = JSON.stringify([priceSignature(node, spec || {}, route), node.properties?.soylabActualCredits, directRef?.rateText]);
+  const signature = JSON.stringify([routerLocale(app), priceSignature(node, spec || {}, route), node.properties?.soylabActualCredits, directRef?.rateText]);
   if (pricePopup.dataset.signature === signature) return;
   pricePopup.dataset.signature = signature;
   pricePopup.replaceChildren();
@@ -312,45 +367,50 @@ function refreshPricePopup() {
     element.textContent = value;
     return element;
   };
-  const heading = line("div", "soylab-price-heading", "Router 실행 공급자별 비용");
+  const heading = line("div", "soylab-price-heading", tr("costTitle"));
   const close = line("button", "soylab-price-close", "×");
   close.type = "button";
-  close.setAttribute("aria-label", "비용 창 닫기");
-  close.onclick = () => { pricePopup?.remove(); pricePopup = null; };
+  close.setAttribute("aria-label", tr("costClose"));
+  close.onclick = closePricePopup;
   const top = line("div", "soylab-price-top", "");
   top.append(heading, close);
+  makePricePopupDraggable(top);
   pricePopup.append(top);
   if (!spec) {
-    pricePopup.append(line("p", "soylab-price-note", "모델을 먼저 선택하세요."));
+    pricePopup.append(line("p", "soylab-price-note", tr("pickModel")));
     return;
   }
   pricePopup.append(line("div", "soylab-price-model", modelLabel(spec)));
-  const settings = [resolution, spec.output === "VIDEO" ? `${duration}초` : "", ratio].filter(Boolean).join(" · ");
+  const settings = [resolution, spec.output === "VIDEO" ? tr("seconds", { seconds: duration }) : "", ratio].filter(Boolean).join(" · ");
   if (settings) pricePopup.append(line("div", "soylab-price-settings", settings));
   const selectedRate = actualForSelection
-    ? `이번 실행 사용 크레딧 ${priceText(Number(actualCredits))}`
+    ? tr("actualInline", { credits: priceText(Number(actualCredits)) })
     : sameRunWithoutCredits
-    ? "이번 실행 사용 크레딧: Router 응답에 없음 · Comfy Credit History 확인"
+    ? tr("actualUnavailable")
     : route !== "Comfy" && observed
-    ? `최근 사용 크레딧 ${priceText(observed.credits)}`
+    ? tr("recent", { credits: priceText(observed.credits) })
     : route !== "Comfy" && directRef
-      ? `외부 직접 API 참고 ${directRef.totalText} · 환산 약 ${directRef.creditTotalText} (Router 실제 청구액 아님)`
+      ? tr("directSelected", { usd: directRef.totalText, credits: directRef.creditTotalText })
     : resolutionNotice
       ? resolutionNotice
+    : published
+      ? tr("directPublishedSelected", { label: published.label })
     : route === "Comfy" && Number.isFinite(quote?.perSecond)
-    ? `${priceText(quote.perSecond)}/초`
+    ? tr("perSecond", { rate: priceText(quote.perSecond) })
     : route === "Comfy" && Number.isFinite(estimateInfo.estimatedCredits)
-      ? `약 ${priceText(estimateInfo.estimatedCredits)}/회`
-      : "실행 전 가격 미공개";
-  pricePopup.append(line("div", "soylab-price-selected", `현재 경로: ${route} · ${selectedRate}`));
+      ? tr("perRun", { rate: priceText(estimateInfo.estimatedCredits) })
+      : route === "Comfy" && spec.pricing?.comfy_reference
+        ? comfyReferenceLabel(spec)
+        : tr("preRunUnavailable");
+  pricePopup.append(line("div", "soylab-price-selected", tr("route", { route, rate: selectedRate })));
   if (route !== "Comfy" && quote) {
-    pricePopup.append(line("div", "soylab-price-baseline", `Comfy 기본 경로 참고: 약 ${priceText(quote.total)}${quote.maxTotal == null ? "" : `–${priceText(quote.maxTotal)}`}`));
+    pricePopup.append(line("div", "soylab-price-baseline", tr("comfyBaseline", { credits: `${priceText(quote.total)}${quote.maxTotal == null ? "" : `–${priceText(quote.maxTotal)}`}` })));
   }
 
   const table = document.createElement("table");
   const head = document.createElement("thead");
   const headRow = document.createElement("tr");
-  for (const label of ["Router 공급자", "공개 참고 가격", "사용 크레딧 / 참고 환산"]) headRow.append(line("th", "", label));
+  for (const key of ["providers", "published", "usedOrConverted"]) headRow.append(line("th", "", tr(key)));
   head.append(headRow);
   table.append(head);
   const body = document.createElement("tbody");
@@ -361,22 +421,23 @@ function refreshPricePopup() {
     const estimated = provider === "Comfy" && Number.isFinite(estimateInfo.estimatedCredits);
     const recent = observedCost(node, spec, provider);
     const outside = directReference(node, spec, provider);
+    const publicRate = publicReference(spec, provider);
     const outsideNotice = directResolutionNotice(node, spec, provider);
     const outsideSource = pricing.models?.[spec.model_id]?.[provider];
-    const rate = known && Number.isFinite(quote.perSecond) ? `Comfy ${priceText(quote.perSecond)}/초` : estimated ? `Comfy 약 ${priceText(estimateInfo.estimatedCredits)}/회` : outside ? `${outside.rangeScope || "직결"} ${outside.rateText}/초 · ${outside.totalText} 참고` : outsideNotice || "공개 참고 없음";
+    const rate = known && Number.isFinite(quote.perSecond) ? tr("comfyRate", { rate: priceText(quote.perSecond) }) : estimated ? tr("comfyRun", { rate: priceText(estimateInfo.estimatedCredits) }) : provider === "Comfy" && spec.pricing?.comfy_reference ? `Comfy ${comfyReferenceLabel(spec)}` : outside ? tr("directRate", { scope: outside.rangeScope || tr("directRateLabel"), rate: outside.rateText, total: outside.totalText }) : outsideNotice || (publicRate ? tr("directPublicRate", { label: publicRate.label }) : tr("noPublicReference"));
     const total = known
-      ? quote.maxTotal == null ? `약 ${priceText(quote.total)}` : `약 ${priceText(quote.total)}–${priceText(quote.maxTotal)}`
-      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 사용 크레딧 ${priceText(recent.credits)}` : outside ? `직결 API 환산 참고 약 ${outside.creditTotalText}` : "사전 요금 미공개";
+      ? tr("approx", { value: quote.maxTotal == null ? priceText(quote.total) : `${priceText(quote.total)}–${priceText(quote.maxTotal)}` })
+      : estimated ? tr("approx", { value: priceText(estimateInfo.estimatedCredits) }) : recent ? tr("recent", { credits: priceText(recent.credits) }) : outside ? tr("directCreditReference", { credits: outside.creditTotalText }) : tr("routerAfterRun");
     row.append(line("td", "", provider));
     const rateCell = line("td", "", rate);
     const noteSource = routeResolutionNote(spec, provider, resolution)?.source;
-    if ((outside || outsideNotice) && (noteSource || outsideSource?.source)) {
+    if ((outside || outsideNotice || publicRate) && (noteSource || outsideSource?.source || publicRate?.source)) {
       const link = document.createElement("a");
-      link.href = noteSource || outsideSource.source;
+      link.href = noteSource || outsideSource?.source || publicRate.source;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = " ↗";
-      link.title = noteSource ? "해상도 지원 안내 출처 · Router 경로/가격은 별도 확인 필요" : `업체 직접 API 가격 출처 · 확인일 ${outsideSource.checked_at}`;
+      link.title = noteSource ? tr("sourceResolution") : tr("sourceDirect", { date: outsideSource?.checked_at || publicRate?.checked_at });
       rateCell.append(link);
     }
     row.append(rateCell, line("td", "", total));
@@ -386,37 +447,43 @@ function refreshPricePopup() {
   pricePopup.append(table);
   const actual = node.properties?.soylabActualCredits;
   if (actual != null && node.properties?.soylabActualSignature === priceSignature(node, spec, route)) {
-    pricePopup.append(line("div", "soylab-price-actual", `이번 실행 사용 크레딧: ${priceText(Number(actual))}`));
+    pricePopup.append(line("div", "soylab-price-actual", tr("actual", { credits: priceText(Number(actual)) })));
   }
-  pricePopup.append(line("p", "soylab-price-note", `직결 USD 가격은 각 업체 API 페이지를 ${pricing.updated_at || "최근"}에 확인해 Git에 기록했습니다. 직결가 환산 크레딧은 $1 = ${COMFY_CREDITS_PER_USD} C 기준의 참고값이며 Router의 실제 청구액을 보장하지 않습니다. Comfy 기본 경로는 공식 Partner Node 가격표의 참고값입니다. Router는 다른 공급자의 사전 요금을 공개하지 않습니다. 최근 사용 크레딧은 Router 응답에 값이 있던 이전 실행 기록이며 입력 내용에 따라 달라질 수 있습니다.`));
-  if (directRef?.note) pricePopup.append(line("p", "soylab-price-note", `${route} 참고 가격은 제공 페이지 내부의 표기 차이가 있어 범위로 표시합니다.`));
+  pricePopup.append(line("p", "soylab-price-note", tr("costMethod", { date: pricing.updated_at || tr("recentDate"), conversion: COMFY_CREDITS_PER_USD })));
+  if (directRef?.note) pricePopup.append(line("p", "soylab-price-note", tr("rangeNote", { provider: route })));
   const pricingLink = document.createElement("a");
   pricingLink.href = "https://docs.comfy.org/tutorials/partner-nodes/pricing";
   pricingLink.target = "_blank";
   pricingLink.rel = "noopener noreferrer";
-  pricingLink.textContent = "Comfy 공식 가격표 ↗";
+  pricingLink.textContent = tr("officialPricing");
   pricePopup.append(pricingLink, document.createTextNode("  ·  "));
   const source = document.createElement("a");
   source.href = "https://docs.comfy.org/development/comfy-router/reference";
   source.target = "_blank";
   source.rel = "noopener noreferrer";
-  source.textContent = "Router 요금 응답 설명 ↗";
+  source.textContent = tr("routerPricing");
   pricePopup.append(source, document.createTextNode("  ·  "));
   const conversion = document.createElement("a");
   conversion.href = "https://support.comfy.org/articles/5846341390-how-credits-work-in-comfy";
   conversion.target = "_blank";
   conversion.rel = "noopener noreferrer";
-  conversion.textContent = "크레딧 환산 기준 ↗";
+  conversion.textContent = tr("creditsGuide");
   pricePopup.append(conversion);
 }
 
 function openPricePopup(node) {
-  pricePopup?.remove();
+  closePricePopup();
   pricePopup = document.createElement("aside");
   pricePopup.className = "soylab-price-popup";
   pricePopup.dataset.nodeId = String(node.id);
-  pricePopup.setAttribute("aria-label", "SOYLAB Comfy Router 비용 비교");
+  pricePopup.setAttribute("aria-label", tr("costAria"));
   document.body.append(pricePopup);
+  pricePopupObserver = new ResizeObserver(([entry]) => {
+    if (pricePopup !== entry.target) return;
+    const width = entry.contentRect.width;
+    pricePopup.style.setProperty("--soylab-popup-font", `${Math.min(21, Math.max(14, width / 40))}px`);
+  });
+  pricePopupObserver.observe(pricePopup);
   refreshPricePopup();
 }
 
@@ -437,20 +504,77 @@ function queueVueSync(id) {
   });
 }
 
+function attachPromptResize(node, textarea) {
+  if (textarea?.tagName !== "TEXTAREA" || !textarea.isConnected) return;
+  const wrapper = textarea.parentElement;
+  const existingGrip = wrapper?.querySelector(":scope > .soylab-prompt-grip");
+  if (existingGrip) {
+    existingGrip.setAttribute("aria-label", tr("promptResizeAria"));
+    existingGrip.title = tr("promptResize");
+    return;
+  }
+  if (!wrapper) return;
+  const row = textarea.closest(".lg-node-widget") || wrapper;
+  const savedHeight = Number(node.properties?.soylabPromptHeight);
+  if (Number.isFinite(savedHeight) && savedHeight >= 96) {
+    textarea.style.height = `${savedHeight}px`;
+  }
+  row.style.minHeight = "96px";
+  wrapper.style.position = "relative";
+  textarea.style.resize = "none";
+  textarea.style.overflowY = "auto";
+  const grip = document.createElement("span");
+  grip.className = "soylab-prompt-grip";
+  grip.setAttribute("role", "separator");
+  grip.setAttribute("aria-label", tr("promptResizeAria"));
+  grip.title = tr("promptResize");
+  wrapper.append(grip);
+  grip.onpointerdown = (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const startY = event.clientY;
+    const scale = app.canvas?.ds?.scale || 1;
+    const initialHeight = textarea.offsetHeight;
+    const initialRowHeight = row.offsetHeight;
+    const initialNodeHeight = node.size?.[1] || 0;
+    grip.setPointerCapture(event.pointerId);
+    grip.onpointermove = (move) => {
+      const height = Math.max(96, Math.round(initialHeight + (move.clientY - startY) / scale));
+      const delta = height - initialHeight;
+      textarea.style.height = `${height}px`;
+      row.style.height = `${Math.max(height, initialRowHeight + delta)}px`;
+      node.setSize?.([node.size[0], Math.max(160, initialNodeHeight + delta)]);
+      node.setDirtyCanvas?.(true, true);
+    };
+    grip.onpointerup = grip.onpointercancel = () => {
+      grip.onpointermove = null;
+      node.properties ||= {};
+      node.properties.soylabPromptHeight = textarea.offsetHeight;
+      queueVueSync(node.id);
+    };
+  };
+}
+
 function syncVueNode(id) {
   const node = app.graph?.getNodeById?.(Number(id));
   if (node?.type !== NODE_ID) return;
   const host = [...document.querySelectorAll("[data-node-id]")].find((element) => element.dataset.nodeId === id);
   const header = host?.querySelector(".lg-node-header");
   if (!header) return;
+  syncKeyPlaceholder(node, host);
   if (!host.classList.contains("soylab-router-vue")) host.classList.add("soylab-router-vue");
   header.style.setProperty("background", HEADER_GRADIENT, "important");
   header.style.setProperty("color", "#fff", "important");
   host.querySelector(".bg-component-node-background")?.style.setProperty("background-color", BODY_BG, "important");
   host.querySelector('[data-testid="advanced-inputs-button"]')?.style.setProperty("background-color", FOOTER_BG, "important");
-  const costButton = [...host.querySelectorAll("button")].find((button) => button.textContent.trim() === "Router 공급자별 비용 확인");
-  costButton?.classList.add("soylab-cost-button");
-  const keyButton = host.querySelector("button.soylab-key-button") || [...host.querySelectorAll("button")].find((button) => [KEY_BUTTON_EXISTS, KEY_BUTTON_MISSING].includes(button.textContent.trim()));
+  attachPromptResize(node, host.querySelector('textarea[aria-label="prompt"]') || host.querySelector(".lg-node-widget textarea"));
+  const costButton = host.querySelector("button.soylab-cost-button") || [...host.querySelectorAll("button")].find((button) => ["Router 공급자별 비용 확인", "Compare Router provider costs", "Router の供給元別料金を比較", "比较 Router 各供应商费用"].includes(button.textContent.trim()));
+  if (costButton) {
+    costButton.classList.add("soylab-cost-button");
+    if (costButton.textContent.trim() !== tr("costButton")) costButton.textContent = tr("costButton");
+  }
+  const keyButton = host.querySelector("button.soylab-key-button") || [...host.querySelectorAll("button")].find((button) => keyLabels.includes(button.textContent.trim()));
   if (keyButton) {
     keyButton.classList.add("soylab-key-button");
     if (keyButton.textContent.trim() !== keyButtonLabel()) keyButton.textContent = keyButtonLabel();
@@ -478,7 +602,7 @@ function syncVueNode(id) {
   if (!badge) {
     badge = document.createElement("span");
     badge.className = "soylab-price-badge";
-    badge.title = "Router 실행 공급자별 비용 비교 열기";
+    badge.title = tr("openComparison");
     badge.setAttribute("role", "button");
     badge.tabIndex = 0;
     badge.onclick = (event) => { event.stopPropagation(); openPricePopup(node); };
@@ -494,10 +618,10 @@ function syncVueNode(id) {
   const selectedRoute = String(field(node, "execution_provider", "Comfy"));
   const selectedReference = selectedRoute === "Comfy" ? null : directReference(node, spec, selectedRoute);
   badge.title = selectedReference?.rangeScope
-    ? `${selectedReference?.rangeScope || "공개 가격 범위"}입니다. 선택한 해상도의 확정 단가가 아닙니다. 실제 Router 청구액은 실행 후 확인하세요.`
+    ? tr("scopeCaution", { scope: selectedReference.rangeScope || tr("publicRange") })
     : selectedReference
-      ? `외부 직접 API 가격을 $1 = ${COMFY_CREDITS_PER_USD} Comfy 크레딧으로 환산한 참고값입니다. 실제 Router 청구액은 실행 후 확인하세요.`
-      : "Router 실행 공급자별 비용 비교 열기";
+      ? tr("conversionCaution", { conversion: COMFY_CREDITS_PER_USD })
+      : tr("openComparison");
 
   const providerRow = host.querySelector('[aria-label="execution_provider"]')?.closest(".lg-node-widget");
   if (providerRow) {
@@ -511,27 +635,32 @@ function syncVueNode(id) {
     const quote = comfyQuote(node, spec);
     const observed = observedCost(node, spec, route);
     const directRef = directReference(node, spec, route);
+    const published = publicReference(spec, route);
     const resolutionNotice = directResolutionNotice(node, spec, route);
     const sameRunWithoutCredits = node.properties?.soylabActualCredits == null
       && node.properties?.soylabActualSignature === priceSignature(node, spec || {}, route)
       && node.properties?.soylabActualModel === spec?.model_id && node.properties?.soylabActualProvider === route;
     const rate = sameRunWithoutCredits
-      ? `${route} 사용 크레딧: Router 응답에 없음 · Comfy Credit History 확인`
+      ? tr("actualUnavailable")
       : route === "Comfy" && Number.isFinite(quote?.perSecond)
-        ? `Comfy 예상 ${priceText(quote.perSecond)}/초 · 자세한 비용은 위 가격 버튼`
+        ? tr("comfyRateHint", { credits: priceText(quote.perSecond) })
       : route === "Comfy" && quote
-        ? `Comfy 예상 ${priceText(quote.total)}/회 · 자세한 비용은 위 가격 버튼`
+        ? tr("comfyRunHint", { credits: priceText(quote.total) })
+      : route === "Comfy" && spec?.pricing?.comfy_reference
+        ? tr("comfyReferenceHint", { label: comfyReferenceLabel(spec) })
       : route !== "Comfy" && observed
-        ? `${route} 최근 사용 크레딧 ${priceText(observed.credits)} · 사전 단가는 미공개`
+        ? tr("recentHint", { provider: route, credits: priceText(observed.credits) })
         : route !== "Comfy" && directRef
-          ? `${route} 외부 직접 API ${directRef.rateText}/초 · ${directRef.duration}초 참고 총 약 ${directRef.creditTotalText} (Router 실제 청구액은 실행 후 확인)`
+          ? tr("directHint", { provider: route, rate: directRef.rateText, seconds: directRef.duration, credits: directRef.creditTotalText, scope: directRef.rangeScope ? ` · ${directRef.rangeScope}` : "" })
         : resolutionNotice
-          ? `${resolutionNotice} · Router 실제 요금은 실행 후 확인`
+          ? tr("resolutionHint", { notice: resolutionNotice })
+        : published
+          ? tr("publishedHint", { provider: route, label: published.label })
         : route !== "Comfy" && quote
-          ? `${route} 사전 단가 미공개 · Comfy 기준 약 ${priceText(quote.total)} (선택 경로 요금 아님)`
-          : `${route} 사전 단가 미공개 · 공식 가격표 링크는 비용 창에서 확인`;
+          ? tr("baselineHint", { provider: route, credits: priceText(quote.total) })
+          : tr("unknownHint", { provider: route });
     const soleRoute = route === "Comfy" && !spec?.alternates?.length;
-    const message = soleRoute ? `${rate} · 이 모델의 대체 실행 경로는 현재 없음` : rate;
+    const message = soleRoute ? tr("soleRoute", { rate }) : rate;
     if (hint.textContent !== message) hint.textContent = message;
   }
 
@@ -541,10 +670,9 @@ function syncVueNode(id) {
     const slot = slots[index];
     const text = slot?.querySelector("span.truncate");
     if (!text) return;
-    if (!text.dataset.soylabLabel) text.dataset.soylabLabel = text.textContent.trim() || kind;
     const supported = spec?.output === kind;
     slot.classList.toggle("soylab-unsupported-output", !supported);
-    const wanted = supported ? text.dataset.soylabLabel : "";
+    const wanted = supported ? tr(`output${kind[0]}${kind.slice(1).toLowerCase()}`) : "";
     if (text.textContent !== wanted) text.textContent = wanted;
   });
   for (const combo of host.querySelectorAll('[role="combobox"]')) {
@@ -591,17 +719,30 @@ function installVueHeaderSupport() {
     }
     .soylab-router-vue .soylab-unsupported-value { color: ${CORAL} !important; }
     .soylab-router-vue .soylab-unsupported-output { display: none !important; }
+    .soylab-prompt-grip {
+      position: absolute; right: 4px; bottom: 4px; z-index: 3;
+      width: 24px; height: 24px; cursor: ns-resize; touch-action: none;
+      border-radius: 5px; background: rgba(35, 23, 50, .75);
+    }
+    .soylab-prompt-grip::after {
+      content: ""; position: absolute; right: 5px; bottom: 5px;
+      width: 12px; height: 12px;
+      border-right: 2px solid #c9a8ed; border-bottom: 2px solid #c9a8ed;
+    }
+    .soylab-prompt-grip:hover { background: #513071; }
     .soylab-price-popup {
       position: fixed; z-index: 100000; top: 72px; right: 24px;
-      width: min(410px, calc(100vw - 32px)); max-height: calc(100vh - 96px);
-      overflow: auto; box-sizing: border-box; padding: 16px;
+      width: min(720px, calc(100vw - 32px)); height: min(560px, calc(100vh - 96px));
+      min-width: min(360px, calc(100vw - 16px)); min-height: 240px;
+      max-width: calc(100vw - 8px); max-height: calc(100vh - 8px);
+      resize: both; overflow: auto; box-sizing: border-box; padding: 18px;
       border: 1px solid #9262ca; border-radius: 12px;
       background: #241530; color: #f8f3ff; box-shadow: 0 18px 52px #0009;
-      font: 12px/1.45 Inter, Arial, sans-serif;
+      font: var(--soylab-popup-font, 15px)/1.45 Inter, Arial, sans-serif;
     }
-    .soylab-price-popup .soylab-price-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .soylab-price-popup .soylab-price-heading { font-size: 16px; font-weight: 700; }
-    .soylab-price-popup .soylab-price-close { border: 0; background: transparent; color: #fff; font-size: 22px; cursor: pointer; }
+    .soylab-price-popup .soylab-price-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: move; touch-action: none; }
+    .soylab-price-popup .soylab-price-heading { font-size: 1.2em; font-weight: 700; }
+    .soylab-price-popup .soylab-price-close { border: 0; background: transparent; color: #fff; font-size: 1.6em; cursor: pointer; }
     .soylab-price-popup .soylab-price-model { margin-top: 7px; font-weight: 600; }
     .soylab-price-popup .soylab-price-settings { margin-top: 2px; color: #c9b4da; }
     .soylab-price-popup .soylab-price-selected {
@@ -693,7 +834,7 @@ function updateOutputLabels(node) {
   ["IMAGE", "VIDEO", "AUDIO"].forEach((kind, index) => {
     const output = node.outputs[index];
     if (!output) return;
-    const name = spec?.output === kind ? kind : "";
+    const name = spec?.output === kind ? tr(`output${kind[0]}${kind.slice(1).toLowerCase()}`) : "";
     const color = spec?.output === kind ? "#BB7BFF" : BODY_BG;
     if (output.name !== name || output.color !== color) changed = true;
     output.name = name;
@@ -729,6 +870,11 @@ function installSelectionWatch(node) {
   const previousDraw = node.onDrawForeground;
   node.onDrawForeground = function (ctx, ...args) {
     previousDraw?.call(this, ctx, ...args);
+    for (const button of this.widgets || []) {
+      if (button._soylabKeyButton) button.name = keyButtonLabel();
+      if (button._soylabPriceButton) button.name = tr("costButton");
+    }
+    syncKeyPlaceholder(this);
     updateOutputLabels(this);
     markUnsupported(this);
     drawHeader(this, ctx);
@@ -748,7 +894,7 @@ function addKeyHelp(node) {
       ctx.fillStyle = "#C7AFDA";
       ctx.font = "10px Inter, Arial, sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText("커스텀 노드 폴더의 API KEY.INI 파일에 직접 입력할 수 있습니다", 14, y + 13, width - 24);
+      ctx.fillText(tr("keyHelp"), 14, y + 13, width - 24);
       ctx.restore();
     },
   };
@@ -764,7 +910,7 @@ function addKeyHelp(node) {
 
 function addPriceButton(node) {
   if (node.widgets?.some((item) => item._soylabPriceButton)) return;
-  const button = node.addWidget("button", "Router 공급자별 비용 확인", null, () => openPricePopup(node));
+  const button = node.addWidget("button", tr("costButton"), null, () => openPricePopup(node));
   button._soylabPriceButton = true;
   button.draw = (ctx, _node, width, y, height) => {
     ctx.save();
@@ -798,7 +944,7 @@ async function openApiKeyFile() {
       throw new Error(message.error || `HTTP ${response.status}`);
     }
   } catch (error) {
-    window.alert(`API KEY.INI를 열지 못했습니다: ${error.message}`);
+    window.alert(tr("keyError", { error: error.message }));
   } finally {
     await refreshKeyFileStatus();
   }
@@ -831,7 +977,14 @@ app.registerExtension({
       addKeyButton(this);
       addPriceButton(this);
       installSelectionWatch(this);
-      setTimeout(() => { updateOutputLabels(this); queueVueSync(this.id); }, 0);
+      setTimeout(() => {
+        updateOutputLabels(this);
+        const promptWidget = this.widgets?.find((item) => item.name === "model.prompt" || item.name === "service.model.version.prompt");
+        const input = promptWidget?.inputEl;
+        attachPromptResize(this, input?.tagName === "TEXTAREA" ? input
+          : input?.querySelector?.("textarea") || promptWidget?.element?.querySelector?.("textarea"));
+        queueVueSync(this.id);
+      }, 0);
       return result;
     };
   },
@@ -861,3 +1014,13 @@ window.addEventListener("focus", refreshKeyFileStatus);
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) refreshKeyFileStatus();
 });
+
+let activeLocale = routerLocale(app);
+setInterval(() => {
+  const next = routerLocale(app);
+  if (next === activeLocale) return;
+  activeLocale = next;
+  syncKeyButtons();
+  for (const node of app.graph?._nodes || []) if (node.type === NODE_ID) node.setDirtyCanvas?.(true, true);
+  refreshPricePopup();
+}, 1000);

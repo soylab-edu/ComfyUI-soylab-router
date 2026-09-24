@@ -170,7 +170,12 @@
         "maker": {
           "type": "text",
           "value": "$0.28/초",
-          "source": "https://docs.dev.runwayml.com/guides/pricing/"
+          "source": "https://docs.dev.runwayml.com/guides/pricing/",
+          "value_i18n": {
+            "en": "$0.28/s",
+            "ja": "$0.28/秒",
+            "zh": "$0.28/秒"
+          }
         },
         "alternates": {}
       }
@@ -181,8 +186,18 @@
       "version": "2.5",
       "model_id": "byteplus/dreamina-seedance-2-5-260628",
       "adapter": "seedance",
-      "modes": ["auto", "text", "image", "reference", "edit", "extend"],
-      "output_formats": ["mp4", "mov"],
+      "modes": [
+        "auto",
+        "text",
+        "image",
+        "reference",
+        "edit",
+        "extend"
+      ],
+      "output_formats": [
+        "mp4",
+        "mov"
+      ],
       "output": "VIDEO",
       "images": 30,
       "videos": 10,
@@ -250,7 +265,12 @@
           "resolution_notes": {
             "1080p": {
               "text": "Higgsfield 앱 1080p 지원 · Router higgsfield 경로·사전 요금 미확인",
-              "source": "https://www.higgsfield.company/creator-hub/changelog"
+              "source": "https://www.higgsfield.company/creator-hub/changelog",
+              "text_i18n": {
+                "en": "Higgsfield app supports 1080p · Router higgsfield route and advance price unverified",
+                "ja": "Higgsfield アプリは 1080p に対応 · Router の higgsfield 経路と事前料金は未確認",
+                "zh": "Higgsfield 应用支持 1080p · Router 的 higgsfield 路径和预先价格尚未核实"
+              }
             }
           }
         },
@@ -321,10 +341,14 @@
               "480p": 0.2205,
               "720p": 0.473
             },
-            "aspect_ratio": "16:9",
-            "reference_inputs": false,
+            "reference_inputs": {
+              "images": 30,
+              "videos": 0,
+              "audios": 3,
+              "last_frame": true
+            },
             "approximate": true,
-            "source": "https://fal.ai/learn/tools/how-to-access-seedance-2-5-on-fal",
+            "source": "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video",
             "checked_at": "2026-09-24"
           },
           "higgsfield": {
@@ -334,15 +358,25 @@
               0.3236
             ],
             "range_scope": "480–720p 전체 공개 범위 · 해상도별 단가 미확인",
-            "reference_inputs": false,
+            "reference_inputs": {
+              "images": 30,
+              "videos": 0,
+              "audios": 3,
+              "last_frame": true
+            },
             "approximate": true,
-            "source": "https://open.higgsfield.ai/models/bytedance/seedance-2.5/text-to-video/playground",
+            "source": "https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/playground",
             "checked_at": "2026-09-24",
             "note": "Higgsfield 공개 API 문서는 480p/720p 요금만 게시합니다. Higgsfield 앱은 1080p를 제공하지만 Router의 higgsfield 경로 가능 여부와 1080p 비용은 확인되지 않았습니다. 이 가격 범위를 1080p에 적용하지 마세요.",
             "priced_resolutions": [
               "480p",
               "720p"
-            ]
+            ],
+            "range_scope_i18n": {
+              "en": "Published 480–720p range · rate by resolution unverified",
+              "ja": "公開されている 480–720p の範囲 · 解像度別料金は未確認",
+              "zh": "公开的 480–720p 范围 · 未核实各分辨率价格"
+            }
           },
           "runware": {
             "kind": "direct_api_per_output_second",
@@ -352,10 +386,10 @@
               "1080p": 0.61354
             },
             "reference_inputs": {
-              "images": 1,
+              "images": 30,
               "videos": 0,
-              "audios": 0,
-              "last_frame": false
+              "audios": 3,
+              "last_frame": true
             },
             "source": "https://runware.ai/seedance-2-5",
             "checked_at": "2026-09-24"
@@ -367,8 +401,14 @@
               "720p": 0.36,
               "1080p": 0.9
             },
-            "reference_inputs": false,
-            "source": "https://wavespeed.ai/models/bytedance/seedance-2.5/text-to-video",
+            "reference_inputs": {
+              "images": 0,
+              "frames": 2,
+              "videos": 0,
+              "audios": 0,
+              "last_frame": true
+            },
+            "source": "https://wavespeed.ai/models/bytedance/seedance-2.5/image-to-video",
             "checked_at": "2026-09-24"
           }
         }
@@ -380,7 +420,12 @@
       "version": "2.0",
       "model_id": "byteplus/dreamina-seedance-2-0-260128",
       "adapter": "seedance",
-      "modes": ["auto", "text", "image", "reference"],
+      "modes": [
+        "auto",
+        "text",
+        "image",
+        "reference"
+      ],
       "output": "VIDEO",
       "images": 9,
       "videos": 3,
@@ -465,6 +510,53 @@
         },
         "maker": null,
         "alternates": {
+          "fal": {
+            "kind": "direct_api_per_output_second",
+            "rates": {
+              "720p": 0.3034,
+              "1080p": 0.682
+            },
+            "reference_inputs": {
+              "images": 9,
+              "videos": 0,
+              "audios": 3,
+              "last_frame": true
+            },
+            "source": "https://fal.ai/models/bytedance/seedance-2.0/reference-to-video",
+            "checked_at": "2026-09-24",
+            "public_reference": {
+              "label": "480p $0.014/1,000 영상 토큰 · 생성 길이·화면비에 따라 변동",
+              "source": "https://fal.ai/models/bytedance/seedance-2.0/reference-to-video",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "480p $0.014/1,000 video tokens · varies by length and aspect ratio",
+                "ja": "480p $0.014/1,000 動画トークン · 長さと画面比率により変動",
+                "zh": "480p $0.014/1,000 视频令牌 · 随时长和画面比例变化"
+              }
+            }
+          },
+          "higgsfield": {
+            "kind": "direct_api_per_output_second_range",
+            "range": [
+              0.0985,
+              1.0887
+            ],
+            "range_scope": "480p–4K 전체 공개 범위 · 해상도별 단가 미확인",
+            "reference_inputs": {
+              "images": 9,
+              "videos": 0,
+              "audios": 3,
+              "last_frame": true
+            },
+            "approximate": true,
+            "source": "https://open.higgsfield.ai/models/bytedance/seedance-2.0/reference-to-video/playground",
+            "checked_at": "2026-09-24",
+            "range_scope_i18n": {
+              "en": "Published 480p–4K range · rate by resolution unverified",
+              "ja": "公開されている 480p–4K の範囲 · 解像度別料金は未確認",
+              "zh": "公开的 480p–4K 范围 · 未核实各分辨率价格"
+            }
+          },
           "runware": {
             "kind": "direct_api_per_output_second",
             "rates": {
@@ -473,7 +565,13 @@
               "1080p": 0.4,
               "4k": 0.8559
             },
-            "reference_inputs": false,
+            "reference_inputs": {
+              "images": 9,
+              "frames": 2,
+              "videos": 0,
+              "audios": 3,
+              "last_frame": true
+            },
             "source": "https://runware.ai/seedance-2-0",
             "checked_at": "2026-09-24"
           },
@@ -485,8 +583,14 @@
               "1080p": 0.6,
               "4k": 1.2
             },
-            "reference_inputs": false,
-            "source": "https://wavespeed.ai/models/bytedance/seedance-2.0/text-to-video",
+            "reference_inputs": {
+              "images": 4,
+              "frames": 2,
+              "videos": 0,
+              "audios": 0,
+              "last_frame": true
+            },
+            "source": "https://wavespeed.ai/models/bytedance/seedance-2.0/image-to-video",
             "checked_at": "2026-09-24"
           }
         }
@@ -498,7 +602,12 @@
       "version": "2.0 Fast",
       "model_id": "byteplus/dreamina-seedance-2-0-fast-260128",
       "adapter": "seedance",
-      "modes": ["auto", "text", "image", "reference"],
+      "modes": [
+        "auto",
+        "text",
+        "image",
+        "reference"
+      ],
       "output": "VIDEO",
       "images": 9,
       "videos": 3,
@@ -573,7 +682,12 @@
       "version": "2.0 Mini",
       "model_id": "byteplus/dreamina-seedance-2-0-mini",
       "adapter": "seedance",
-      "modes": ["auto", "text", "image", "reference"],
+      "modes": [
+        "auto",
+        "text",
+        "image",
+        "reference"
+      ],
       "output": "VIDEO",
       "images": 9,
       "videos": 3,
@@ -648,7 +762,10 @@
       "version": "5.0 Pro",
       "model_id": "byteplus/seedream-5-0-pro-260628",
       "adapter": "seedream",
-      "modes": ["standard", "fast"],
+      "modes": [
+        "standard",
+        "fast"
+      ],
       "output": "IMAGE",
       "images": 10,
       "videos": 0,
@@ -778,7 +895,44 @@
           "reference_image_usd": 0.0098
         },
         "maker": null,
-        "alternates": {}
+        "alternates": {
+          "fal": {
+            "public_reference": {
+              "label": "$0.006/장부터 · 1024² low 생성 기준; 편집·화질별 변동",
+              "source": "https://fal.ai/models/openai/gpt-image-2",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.006/image · 1024² low generation; varies by editing and quality",
+                "ja": "$0.006/枚から · 1024² 低画質生成基準、編集・画質で変動",
+                "zh": "每张 $0.006 起 · 1024² 低画质生成；编辑和画质不同价格不同"
+              }
+            }
+          },
+          "runware": {
+            "public_reference": {
+              "label": "통상 약 $0.0324/회 · 토큰 종량, 편집·출력별 변동",
+              "source": "https://runware.ai/docs/models/openai-gpt-image-2",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "Typically ~$0.0324/run · token based; varies by edits and output",
+                "ja": "通常約 $0.0324/回 · トークン従量制、編集・出力で変動",
+                "zh": "通常约 $0.0324/次 · 按令牌计费，编辑和输出不同价格不同"
+              }
+            }
+          },
+          "wavespeed": {
+            "public_reference": {
+              "label": "$0.01/장부터 · 1K low 생성 기준, 편집 별도",
+              "source": "https://wavespeed.ai/models/openai/gpt-image-2/text-to-image",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.01/image · 1K low generation; editing charged separately",
+                "ja": "$0.01/枚から · 1K 低画質生成基準、編集は別料金",
+                "zh": "每张 $0.01 起 · 1K 低画质生成；编辑另计"
+              }
+            }
+          }
+        }
       },
       "qualities": [
         "low",
@@ -856,7 +1010,44 @@
           "reference_image_usd": 0.0117
         },
         "maker": null,
-        "alternates": {}
+        "alternates": {
+          "fal": {
+            "public_reference": {
+              "label": "$0.006/장부터 · 1024² low 생성 기준; 편집·토큰별 변동",
+              "source": "https://fal.ai/gpt-image-2.5",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.006/image · 1024² low generation; varies by edits and tokens",
+                "ja": "$0.006/枚から · 1024² 低画質生成基準、編集・トークンで変動",
+                "zh": "每张 $0.006 起 · 1024² 低画质生成；随编辑和令牌变化"
+              }
+            }
+          },
+          "runware": {
+            "public_reference": {
+              "label": "통상 약 $0.0336/회 · 토큰 종량, 편집·출력별 변동",
+              "source": "https://runware.ai/docs/models/openai-gpt-image-2-5-flare",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "Typically ~$0.0336/run · token based; varies by edits and output",
+                "ja": "通常約 $0.0336/回 · トークン従量制、編集・出力で変動",
+                "zh": "通常约 $0.0336/次 · 按令牌计费，编辑和输出不同价格不同"
+              }
+            }
+          },
+          "wavespeed": {
+            "public_reference": {
+              "label": "$0.01/장부터 · 1K low 생성 기준, 편집 별도",
+              "source": "https://wavespeed.ai/models/openai/gpt-image-2.5-flare/text-to-image",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.01/image · 1K low generation; editing charged separately",
+                "ja": "$0.01/枚から · 1K 低画質生成基準、編集は別料金",
+                "zh": "每张 $0.01 起 · 1K 低画质生成；编辑另计"
+              }
+            }
+          }
+        }
       },
       "qualities": [
         "low",
@@ -936,7 +1127,44 @@
           "reference_image_usd": 0.0117
         },
         "maker": null,
-        "alternates": {}
+        "alternates": {
+          "fal": {
+            "public_reference": {
+              "label": "$0.006/장부터 · 1024² low 생성 기준; 편집·토큰별 변동",
+              "source": "https://fal.ai/gpt-image-2.5",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.006/image · 1024² low generation; varies by edits and tokens",
+                "ja": "$0.006/枚から · 1024² 低画質生成基準、編集・トークンで変動",
+                "zh": "每张 $0.006 起 · 1024² 低画质生成；随编辑和令牌变化"
+              }
+            }
+          },
+          "runware": {
+            "public_reference": {
+              "label": "통상 약 $0.0611/회 · 토큰 종량, 편집·출력별 변동",
+              "source": "https://runware.ai/docs/models/openai-gpt-image-2-5-sunburst",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "Typically ~$0.0611/run · token based; varies by edits and output",
+                "ja": "通常約 $0.0611/回 · トークン従量制、編集・出力で変動",
+                "zh": "通常约 $0.0611/次 · 按令牌计费，编辑和输出不同价格不同"
+              }
+            }
+          },
+          "wavespeed": {
+            "public_reference": {
+              "label": "$0.01/장부터 · 1K low 생성 기준, 편집 별도",
+              "source": "https://wavespeed.ai/models/openai/gpt-image-2.5-sunburst/text-to-image",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.01/image · 1K low generation; editing charged separately",
+                "ja": "$0.01/枚から · 1K 低画質生成基準、編集は別料金",
+                "zh": "每张 $0.01 起 · 1K 低画质生成；编辑另计"
+              }
+            }
+          }
+        }
       },
       "qualities": [
         "low",
@@ -1004,7 +1232,44 @@
           }
         },
         "maker": null,
-        "alternates": {}
+        "alternates": {
+          "fal": {
+            "public_reference": {
+              "label": "$0.08/장부터 · 1K, 2K $0.12, 4K $0.16",
+              "source": "https://fal.ai/models/fal-ai/nano-banana-2",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.08/image · 1K; 2K $0.12, 4K $0.16",
+                "ja": "$0.08/枚から · 1K、2K $0.12、4K $0.16",
+                "zh": "每张 $0.08 起 · 1K，2K $0.12，4K $0.16"
+              }
+            }
+          },
+          "runware": {
+            "public_reference": {
+              "label": "$0.0689/장부터 · 1K, 2K $0.103, 4K $0.153 + 입력 이미지",
+              "source": "https://runware.ai/docs/models/google-nano-banana-2",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.0689/image · 1K; 2K $0.103, 4K $0.153 plus input images",
+                "ja": "$0.0689/枚から · 1K、2K $0.103、4K $0.153 ＋ 入力画像",
+                "zh": "每张 $0.0689 起 · 1K，2K $0.103，4K $0.153，另计输入图像"
+              }
+            }
+          },
+          "wavespeed": {
+            "public_reference": {
+              "label": "$0.07/장부터 · 해상도·옵션별 변동",
+              "source": "https://wavespeed.ai/pricing",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.07/image · varies by resolution and options",
+                "ja": "$0.07/枚から · 解像度とオプションで変動",
+                "zh": "每张 $0.07 起 · 随分辨率和选项变化"
+              }
+            }
+          }
+        }
       }
     },
     {
@@ -1109,7 +1374,44 @@
           }
         },
         "maker": null,
-        "alternates": {}
+        "alternates": {
+          "fal": {
+            "public_reference": {
+              "label": "$0.15/장부터 · 1K/2K, 4K $0.30",
+              "source": "https://fal.ai/nano-banana-pro",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.15/image · 1K/2K; 4K $0.30",
+                "ja": "$0.15/枚から · 1K/2K、4K $0.30",
+                "zh": "每张 $0.15 起 · 1K/2K，4K $0.30"
+              }
+            }
+          },
+          "runware": {
+            "public_reference": {
+              "label": "$0.138/장부터 · 1K/2K, 4K $0.244",
+              "source": "https://runware.ai/docs/models/google-nano-banana-pro",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.138/image · 1K/2K; 4K $0.244",
+                "ja": "$0.138/枚から · 1K/2K、4K $0.244",
+                "zh": "每张 $0.138 起 · 1K/2K，4K $0.244"
+              }
+            }
+          },
+          "wavespeed": {
+            "public_reference": {
+              "label": "$0.14/장부터 · 해상도·옵션별 변동",
+              "source": "https://wavespeed.ai/pricing",
+              "checked_at": "2026-09-24",
+              "label_i18n": {
+                "en": "From $0.14/image · varies by resolution and options",
+                "ja": "$0.14/枚から · 解像度とオプションで変動",
+                "zh": "每张 $0.14 起 · 随分辨率和选项变化"
+              }
+            }
+          }
+        }
       }
     },
     {
@@ -1118,7 +1420,13 @@
       "version": "1.0",
       "model_id": "byteplus/seed-audio-1.0",
       "adapter": "seed_audio",
-      "modes": ["auto", "text", "audio", "image", "preset_voice"],
+      "modes": [
+        "auto",
+        "text",
+        "audio",
+        "image",
+        "preset_voice"
+      ],
       "output": "AUDIO",
       "images": 1,
       "videos": 0,
@@ -1138,7 +1446,16 @@
       "pricing": {
         "comfy": null,
         "maker": null,
-        "alternates": {}
+        "alternates": {},
+        "comfy_reference": {
+          "label": "약 45.26 C/분 · 생성 길이에 따라 과금",
+          "source": "https://docs.comfy.org/tutorials/partner-nodes/pricing",
+          "label_i18n": {
+            "en": "approx. 45.26 C/min · billed by generated length",
+            "ja": "約 45.26 C/分 · 生成時間に応じて課金",
+            "zh": "约 45.26 C/分钟 · 按生成时长计费"
+          }
+        }
       }
     },
     {
@@ -1147,7 +1464,13 @@
       "version": "1.0 Multilingual",
       "model_id": "byteplus/seed-audio-1.0-multilingual",
       "adapter": "seed_audio",
-      "modes": ["auto", "text", "audio", "image", "preset_voice"],
+      "modes": [
+        "auto",
+        "text",
+        "audio",
+        "image",
+        "preset_voice"
+      ],
       "output": "AUDIO",
       "images": 1,
       "videos": 0,
@@ -1167,7 +1490,16 @@
       "pricing": {
         "comfy": null,
         "maker": null,
-        "alternates": {}
+        "alternates": {},
+        "comfy_reference": {
+          "label": "약 45.26 C/분 · 생성 길이에 따라 과금",
+          "source": "https://docs.comfy.org/tutorials/partner-nodes/pricing",
+          "label_i18n": {
+            "en": "approx. 45.26 C/min · billed by generated length",
+            "ja": "約 45.26 C/分 · 生成時間に応じて課金",
+            "zh": "约 45.26 C/分钟 · 按生成时长计费"
+          }
+        }
       }
     }
   ]

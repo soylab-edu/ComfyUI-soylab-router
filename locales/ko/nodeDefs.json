@@ -1,0 +1,323 @@
+{
+  "SoylabComfyRouter": {
+    "display_name": "SOYLAB Comfy Router",
+    "description": "개인 API 키로 Comfy Router 모델을 실행합니다. 선택한 모델에 따라 입력이 바뀝니다.",
+    "inputs": {
+      "api_key": {
+        "name": "API 키",
+        "tooltip": "비워두면 API KEY.INI에서 읽습니다. 여기 입력한 키는 워크플로에 저장될 수 있습니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "모델을 선택하세요. 아래 공급자는 Router 실행 경로입니다."
+      },
+      "execution_provider": {
+        "name": "공급자 선택",
+        "tooltip": "Comfy Router가 실제 실행에 사용할 공급자입니다. 모델 제작사와 다른 개념입니다."
+      },
+      "model_execution_provider": {
+        "name": "공급자 선택",
+        "tooltip": "Comfy Router가 실제 실행에 사용할 공급자입니다. 모델 제작사와 다른 개념입니다."
+      },
+      "mode": {
+        "name": "작업 모드",
+        "tooltip": "선택한 모델의 작업 또는 참조 모드를 고릅니다. 사용 가능한 옵션은 모델에 따라 달라집니다."
+      },
+      "model_mode": {
+        "name": "작업 모드",
+        "tooltip": "선택한 모델의 작업 또는 참조 모드를 고릅니다. 사용 가능한 옵션은 모델에 따라 달라집니다."
+      },
+      "preset_voice": {
+        "name": "기본 음성",
+        "tooltip": "preset_voice 모드에서 사용할 음성입니다."
+      },
+      "model_preset_voice": {
+        "name": "기본 음성",
+        "tooltip": "preset_voice 모드에서 사용할 음성입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "생성 또는 편집 프롬프트입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트",
+        "tooltip": "생성 또는 편집 프롬프트입니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "선택한 모델과 경로가 지원하는 해상도 또는 크기입니다."
+      },
+      "model_resolution": {
+        "name": "해상도",
+        "tooltip": "선택한 모델과 경로가 지원하는 해상도 또는 크기입니다."
+      },
+      "ratio": {
+        "name": "화면비",
+        "tooltip": "모델에서 지원하는 화면 비율입니다."
+      },
+      "model_ratio": {
+        "name": "화면비",
+        "tooltip": "모델에서 지원하는 화면 비율입니다."
+      },
+      "duration": {
+        "name": "영상 길이",
+        "tooltip": "영상 길이(초)입니다."
+      },
+      "model_duration": {
+        "name": "영상 길이",
+        "tooltip": "영상 길이(초)입니다."
+      },
+      "first_frame": {
+        "name": "첫 프레임",
+        "tooltip": "image 모드에서 필수입니다. image_1과 별도입니다."
+      },
+      "model_first_frame": {
+        "name": "첫 프레임",
+        "tooltip": "image 모드에서 필수입니다. image_1과 별도입니다."
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "첫 프레임과 함께 연결하세요."
+      },
+      "model_last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "첫 프레임과 함께 연결하세요."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "무작위 시드입니다."
+      },
+      "model_seed": {
+        "name": "시드",
+        "tooltip": "무작위 시드입니다."
+      },
+      "watermark": {
+        "name": "워터마크",
+        "tooltip": "지원되는 경우 워터마크를 추가합니다."
+      },
+      "model_watermark": {
+        "name": "워터마크",
+        "tooltip": "지원되는 경우 워터마크를 추가합니다."
+      },
+      "generate_audio": {
+        "name": "오디오 생성",
+        "tooltip": "영상에 오디오를 생성합니다."
+      },
+      "model_generate_audio": {
+        "name": "오디오 생성",
+        "tooltip": "영상에 오디오를 생성합니다."
+      },
+      "output_format": {
+        "name": "출력 형식",
+        "tooltip": "출력 파일 형식을 선택합니다."
+      },
+      "model_output_format": {
+        "name": "출력 형식",
+        "tooltip": "출력 파일 형식을 선택합니다."
+      },
+      "quality": {
+        "name": "품질",
+        "tooltip": "모델에서 지원하는 품질을 선택합니다."
+      },
+      "model_quality": {
+        "name": "품질",
+        "tooltip": "모델에서 지원하는 품질을 선택합니다."
+      },
+      "reference_images": {
+        "name": "참조 이미지",
+        "tooltip": "모델이 허용하는 최대 개수까지 연결합니다."
+      },
+      "model_reference_images": {
+        "name": "참조 이미지",
+        "tooltip": "모델이 허용하는 최대 개수까지 연결합니다."
+      },
+      "reference_videos": {
+        "name": "참조 영상",
+        "tooltip": "모델이 허용하는 최대 개수까지 연결합니다."
+      },
+      "model_reference_videos": {
+        "name": "참조 영상",
+        "tooltip": "모델이 허용하는 최대 개수까지 연결합니다."
+      },
+      "reference_audios": {
+        "name": "참조 오디오",
+        "tooltip": "모델이 허용하는 최대 개수까지 연결합니다."
+      },
+      "model_reference_audios": {
+        "name": "참조 오디오",
+        "tooltip": "모델이 허용하는 최대 개수까지 연결합니다."
+      },
+      "advanced_json": {
+        "name": "고급 JSON",
+        "tooltip": "선택 모델의 추가 네이티브 JSON 파라미터입니다. model 필드는 URL에서 지정됩니다."
+      },
+      "model_reference_images_image_1": {
+        "name": "참조 이미지 1"
+      },
+      "model_reference_images_image_2": {
+        "name": "참조 이미지 2"
+      },
+      "model_reference_images_image_3": {
+        "name": "참조 이미지 3"
+      },
+      "model_reference_images_image_4": {
+        "name": "참조 이미지 4"
+      },
+      "model_reference_images_image_5": {
+        "name": "참조 이미지 5"
+      },
+      "model_reference_images_image_6": {
+        "name": "참조 이미지 6"
+      },
+      "model_reference_images_image_7": {
+        "name": "참조 이미지 7"
+      },
+      "model_reference_images_image_8": {
+        "name": "참조 이미지 8"
+      },
+      "model_reference_images_image_9": {
+        "name": "참조 이미지 9"
+      },
+      "model_reference_images_image_10": {
+        "name": "참조 이미지 10"
+      },
+      "model_reference_images_image_11": {
+        "name": "참조 이미지 11"
+      },
+      "model_reference_images_image_12": {
+        "name": "참조 이미지 12"
+      },
+      "model_reference_images_image_13": {
+        "name": "참조 이미지 13"
+      },
+      "model_reference_images_image_14": {
+        "name": "참조 이미지 14"
+      },
+      "model_reference_images_image_15": {
+        "name": "참조 이미지 15"
+      },
+      "model_reference_images_image_16": {
+        "name": "참조 이미지 16"
+      },
+      "model_reference_images_image_17": {
+        "name": "참조 이미지 17"
+      },
+      "model_reference_images_image_18": {
+        "name": "참조 이미지 18"
+      },
+      "model_reference_images_image_19": {
+        "name": "참조 이미지 19"
+      },
+      "model_reference_images_image_20": {
+        "name": "참조 이미지 20"
+      },
+      "model_reference_images_image_21": {
+        "name": "참조 이미지 21"
+      },
+      "model_reference_images_image_22": {
+        "name": "참조 이미지 22"
+      },
+      "model_reference_images_image_23": {
+        "name": "참조 이미지 23"
+      },
+      "model_reference_images_image_24": {
+        "name": "참조 이미지 24"
+      },
+      "model_reference_images_image_25": {
+        "name": "참조 이미지 25"
+      },
+      "model_reference_images_image_26": {
+        "name": "참조 이미지 26"
+      },
+      "model_reference_images_image_27": {
+        "name": "참조 이미지 27"
+      },
+      "model_reference_images_image_28": {
+        "name": "참조 이미지 28"
+      },
+      "model_reference_images_image_29": {
+        "name": "참조 이미지 29"
+      },
+      "model_reference_images_image_30": {
+        "name": "참조 이미지 30"
+      },
+      "model_reference_videos_video_1": {
+        "name": "참조 영상 1"
+      },
+      "model_reference_videos_video_2": {
+        "name": "참조 영상 2"
+      },
+      "model_reference_videos_video_3": {
+        "name": "참조 영상 3"
+      },
+      "model_reference_videos_video_4": {
+        "name": "참조 영상 4"
+      },
+      "model_reference_videos_video_5": {
+        "name": "참조 영상 5"
+      },
+      "model_reference_videos_video_6": {
+        "name": "참조 영상 6"
+      },
+      "model_reference_videos_video_7": {
+        "name": "참조 영상 7"
+      },
+      "model_reference_videos_video_8": {
+        "name": "참조 영상 8"
+      },
+      "model_reference_videos_video_9": {
+        "name": "참조 영상 9"
+      },
+      "model_reference_videos_video_10": {
+        "name": "참조 영상 10"
+      },
+      "model_reference_audios_audio_1": {
+        "name": "참조 오디오 1"
+      },
+      "model_reference_audios_audio_2": {
+        "name": "참조 오디오 2"
+      },
+      "model_reference_audios_audio_3": {
+        "name": "참조 오디오 3"
+      },
+      "model_reference_audios_audio_4": {
+        "name": "참조 오디오 4"
+      },
+      "model_reference_audios_audio_5": {
+        "name": "참조 오디오 5"
+      },
+      "model_reference_audios_audio_6": {
+        "name": "참조 오디오 6"
+      },
+      "model_reference_audios_audio_7": {
+        "name": "참조 오디오 7"
+      },
+      "model_reference_audios_audio_8": {
+        "name": "참조 오디오 8"
+      },
+      "model_reference_audios_audio_9": {
+        "name": "참조 오디오 9"
+      },
+      "model_reference_audios_audio_10": {
+        "name": "참조 오디오 10"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "이미지"
+      },
+      "1": {
+        "name": "비디오"
+      },
+      "2": {
+        "name": "오디오"
+      },
+      "3": {
+        "name": "RAW JSON"
+      },
+      "4": {
+        "name": "COST"
+      }
+    }
+  }
+}

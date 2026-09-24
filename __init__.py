@@ -5,6 +5,7 @@ import base64
 import configparser
 import json
 import ipaddress
+import time
 from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -34,14 +35,27 @@ _STAGE_TEXT = {
     "completed": "완료",
     "failed": "오류 · 실행 기록 확인",
 }
+_STAGE_STEP = {
+    "preparing": 1, "uploading": 1,
+    "submitting": 2,
+    "queued": 3, "generating": 3, "sync_waiting": 3,
+    "collecting": 4, "downloading": 4,
+    "completed": 5,
+}
 
 
-def _report_progress(server, node_id, stage, **details):
-    server.send_sync("soylab_router_status", {"node_id": node_id, "stage": stage, **details})
+def _progress_text(stage, elapsed_seconds=0, **details):
     message = _STAGE_TEXT.get(stage, stage)
     if stage == "queued" and isinstance(details.get("queue_position"), int):
         message += f" · 앞에 {details['queue_position']}건"
-    server.send_progress_text(f"SOYLAB Router · {message}", node_id)
+    step = _STAGE_STEP.get(stage)
+    count = f" ({step}/5)" if step is not None else ""
+    return f"SOYLAB Router{count} · {message} · {max(0, int(elapsed_seconds))}초 경과"
+
+
+def _report_progress(server, node_id, stage, elapsed_seconds=0, **details):
+    server.send_sync("soylab_router_status", {"node_id": node_id, "stage": stage, **details})
+    server.send_progress_text(_progress_text(stage, elapsed_seconds, **details), node_id)
 
 
 def _register_routes():
@@ -219,15 +233,31 @@ class SoylabComfyRouter(IO.ComfyNode):
         from server import PromptServer
 
         node_id = str(cls.hidden.unique_id)
+        started_at = time.monotonic()
+        progress = {"stage": "preparing", "details": {}}
         def report(stage, **details):
-            _report_progress(PromptServer.instance, node_id, stage, **details)
+            progress.update(stage=stage, details=details)
+            _report_progress(PromptServer.instance, node_id, stage,
+                             elapsed_seconds=time.monotonic() - started_at, **details)
+
+        async def tick_progress():
+            while True:
+                await asyncio.sleep(1)
+                if progress["stage"] in ("completed", "failed"):
+                    return
+                PromptServer.instance.send_progress_text(
+                    _progress_text(progress["stage"], time.monotonic() - started_at,
+                                   **progress["details"]), node_id)
 
         report("preparing")
+        ticker = asyncio.create_task(tick_progress())
         try:
             return await cls._execute_with_status(api_key, model, advanced_json, report)
         except Exception:
             report("failed")
             raise
+        finally:
+            ticker.cancel()
 
     @classmethod
     async def _execute_with_status(cls, api_key, model, advanced_json, report):

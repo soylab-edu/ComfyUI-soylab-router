@@ -1,0 +1,323 @@
+{
+  "SoylabComfyRouter": {
+    "display_name": "SOYLAB Comfy Router",
+    "description": "Run Comfy Router models with your personal API key. Inputs change with the selected model.",
+    "inputs": {
+      "api_key": {
+        "name": "API key",
+        "tooltip": "Leave blank to read API KEY.INI. A key entered here may be saved in the workflow."
+      },
+      "model": {
+        "name": "Model",
+        "tooltip": "Choose a model. The provider below is the Router execution route."
+      },
+      "execution_provider": {
+        "name": "Provider",
+        "tooltip": "The provider that executes the request through Comfy Router. This is distinct from the model maker."
+      },
+      "model_execution_provider": {
+        "name": "Provider",
+        "tooltip": "The provider that executes the request through Comfy Router. This is distinct from the model maker."
+      },
+      "mode": {
+        "name": "Mode",
+        "tooltip": "Choose the operation or reference mode. Available options depend on the selected model."
+      },
+      "model_mode": {
+        "name": "Mode",
+        "tooltip": "Choose the operation or reference mode. Available options depend on the selected model."
+      },
+      "preset_voice": {
+        "name": "Preset voice",
+        "tooltip": "Use this voice in preset_voice mode."
+      },
+      "model_preset_voice": {
+        "name": "Preset voice",
+        "tooltip": "Use this voice in preset_voice mode."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Generation or editing prompt."
+      },
+      "model_prompt": {
+        "name": "Prompt",
+        "tooltip": "Generation or editing prompt."
+      },
+      "resolution": {
+        "name": "Resolution",
+        "tooltip": "Resolution or size supported by this model and route."
+      },
+      "model_resolution": {
+        "name": "Resolution",
+        "tooltip": "Resolution or size supported by this model and route."
+      },
+      "ratio": {
+        "name": "Aspect ratio",
+        "tooltip": "Aspect ratio supported by the selected model."
+      },
+      "model_ratio": {
+        "name": "Aspect ratio",
+        "tooltip": "Aspect ratio supported by the selected model."
+      },
+      "duration": {
+        "name": "Duration",
+        "tooltip": "Video length in seconds."
+      },
+      "model_duration": {
+        "name": "Duration",
+        "tooltip": "Video length in seconds."
+      },
+      "first_frame": {
+        "name": "First frame",
+        "tooltip": "Required in image mode. This is separate from image_1."
+      },
+      "model_first_frame": {
+        "name": "First frame",
+        "tooltip": "Required in image mode. This is separate from image_1."
+      },
+      "last_frame": {
+        "name": "Last frame",
+        "tooltip": "Connect with the first frame."
+      },
+      "model_last_frame": {
+        "name": "Last frame",
+        "tooltip": "Connect with the first frame."
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Random seed."
+      },
+      "model_seed": {
+        "name": "Seed",
+        "tooltip": "Random seed."
+      },
+      "watermark": {
+        "name": "Watermark",
+        "tooltip": "Add a watermark when supported."
+      },
+      "model_watermark": {
+        "name": "Watermark",
+        "tooltip": "Add a watermark when supported."
+      },
+      "generate_audio": {
+        "name": "Generate audio",
+        "tooltip": "Generate audio with the video."
+      },
+      "model_generate_audio": {
+        "name": "Generate audio",
+        "tooltip": "Generate audio with the video."
+      },
+      "output_format": {
+        "name": "Output format",
+        "tooltip": "Choose the output file format."
+      },
+      "model_output_format": {
+        "name": "Output format",
+        "tooltip": "Choose the output file format."
+      },
+      "quality": {
+        "name": "Quality",
+        "tooltip": "Choose the quality supported by this model."
+      },
+      "model_quality": {
+        "name": "Quality",
+        "tooltip": "Choose the quality supported by this model."
+      },
+      "reference_images": {
+        "name": "Reference images",
+        "tooltip": "Connect up to the number of images supported by this model."
+      },
+      "model_reference_images": {
+        "name": "Reference images",
+        "tooltip": "Connect up to the number of images supported by this model."
+      },
+      "reference_videos": {
+        "name": "Reference videos",
+        "tooltip": "Connect up to the number of videos supported by this model."
+      },
+      "model_reference_videos": {
+        "name": "Reference videos",
+        "tooltip": "Connect up to the number of videos supported by this model."
+      },
+      "reference_audios": {
+        "name": "Reference audios",
+        "tooltip": "Connect up to the number of audio clips supported by this model."
+      },
+      "model_reference_audios": {
+        "name": "Reference audios",
+        "tooltip": "Connect up to the number of audio clips supported by this model."
+      },
+      "advanced_json": {
+        "name": "Advanced JSON",
+        "tooltip": "Additional native JSON parameters for the selected model. The model is specified in the URL."
+      },
+      "model_reference_images_image_1": {
+        "name": "Reference images 1"
+      },
+      "model_reference_images_image_2": {
+        "name": "Reference images 2"
+      },
+      "model_reference_images_image_3": {
+        "name": "Reference images 3"
+      },
+      "model_reference_images_image_4": {
+        "name": "Reference images 4"
+      },
+      "model_reference_images_image_5": {
+        "name": "Reference images 5"
+      },
+      "model_reference_images_image_6": {
+        "name": "Reference images 6"
+      },
+      "model_reference_images_image_7": {
+        "name": "Reference images 7"
+      },
+      "model_reference_images_image_8": {
+        "name": "Reference images 8"
+      },
+      "model_reference_images_image_9": {
+        "name": "Reference images 9"
+      },
+      "model_reference_images_image_10": {
+        "name": "Reference images 10"
+      },
+      "model_reference_images_image_11": {
+        "name": "Reference images 11"
+      },
+      "model_reference_images_image_12": {
+        "name": "Reference images 12"
+      },
+      "model_reference_images_image_13": {
+        "name": "Reference images 13"
+      },
+      "model_reference_images_image_14": {
+        "name": "Reference images 14"
+      },
+      "model_reference_images_image_15": {
+        "name": "Reference images 15"
+      },
+      "model_reference_images_image_16": {
+        "name": "Reference images 16"
+      },
+      "model_reference_images_image_17": {
+        "name": "Reference images 17"
+      },
+      "model_reference_images_image_18": {
+        "name": "Reference images 18"
+      },
+      "model_reference_images_image_19": {
+        "name": "Reference images 19"
+      },
+      "model_reference_images_image_20": {
+        "name": "Reference images 20"
+      },
+      "model_reference_images_image_21": {
+        "name": "Reference images 21"
+      },
+      "model_reference_images_image_22": {
+        "name": "Reference images 22"
+      },
+      "model_reference_images_image_23": {
+        "name": "Reference images 23"
+      },
+      "model_reference_images_image_24": {
+        "name": "Reference images 24"
+      },
+      "model_reference_images_image_25": {
+        "name": "Reference images 25"
+      },
+      "model_reference_images_image_26": {
+        "name": "Reference images 26"
+      },
+      "model_reference_images_image_27": {
+        "name": "Reference images 27"
+      },
+      "model_reference_images_image_28": {
+        "name": "Reference images 28"
+      },
+      "model_reference_images_image_29": {
+        "name": "Reference images 29"
+      },
+      "model_reference_images_image_30": {
+        "name": "Reference images 30"
+      },
+      "model_reference_videos_video_1": {
+        "name": "Reference videos 1"
+      },
+      "model_reference_videos_video_2": {
+        "name": "Reference videos 2"
+      },
+      "model_reference_videos_video_3": {
+        "name": "Reference videos 3"
+      },
+      "model_reference_videos_video_4": {
+        "name": "Reference videos 4"
+      },
+      "model_reference_videos_video_5": {
+        "name": "Reference videos 5"
+      },
+      "model_reference_videos_video_6": {
+        "name": "Reference videos 6"
+      },
+      "model_reference_videos_video_7": {
+        "name": "Reference videos 7"
+      },
+      "model_reference_videos_video_8": {
+        "name": "Reference videos 8"
+      },
+      "model_reference_videos_video_9": {
+        "name": "Reference videos 9"
+      },
+      "model_reference_videos_video_10": {
+        "name": "Reference videos 10"
+      },
+      "model_reference_audios_audio_1": {
+        "name": "Reference audios 1"
+      },
+      "model_reference_audios_audio_2": {
+        "name": "Reference audios 2"
+      },
+      "model_reference_audios_audio_3": {
+        "name": "Reference audios 3"
+      },
+      "model_reference_audios_audio_4": {
+        "name": "Reference audios 4"
+      },
+      "model_reference_audios_audio_5": {
+        "name": "Reference audios 5"
+      },
+      "model_reference_audios_audio_6": {
+        "name": "Reference audios 6"
+      },
+      "model_reference_audios_audio_7": {
+        "name": "Reference audios 7"
+      },
+      "model_reference_audios_audio_8": {
+        "name": "Reference audios 8"
+      },
+      "model_reference_audios_audio_9": {
+        "name": "Reference audios 9"
+      },
+      "model_reference_audios_audio_10": {
+        "name": "Reference audios 10"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Image"
+      },
+      "1": {
+        "name": "Video"
+      },
+      "2": {
+        "name": "Audio"
+      },
+      "3": {
+        "name": "Raw JSON"
+      },
+      "4": {
+        "name": "Cost"
+      }
+    }
+  }
+}

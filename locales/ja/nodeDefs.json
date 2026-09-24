@@ -1,0 +1,323 @@
+{
+  "SoylabComfyRouter": {
+    "display_name": "SOYLAB Comfy Router",
+    "description": "個人の API キーで Comfy Router のモデルを実行します。選択したモデルに応じて入力が変わります。",
+    "inputs": {
+      "api_key": {
+        "name": "API キー",
+        "tooltip": "空欄の場合は API KEY.INI から読み込みます。ここに入力したキーはワークフローに保存される場合があります。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "モデルを選択します。下の供給元は Router の実行経路です。"
+      },
+      "execution_provider": {
+        "name": "供給元",
+        "tooltip": "Comfy Router が実際の実行に使う供給元です。モデルの開発元とは別です。"
+      },
+      "model_execution_provider": {
+        "name": "供給元",
+        "tooltip": "Comfy Router が実際の実行に使う供給元です。モデルの開発元とは別です。"
+      },
+      "mode": {
+        "name": "モード",
+        "tooltip": "選択したモデルの操作または参照モードを選びます。選択肢はモデルによって異なります。"
+      },
+      "model_mode": {
+        "name": "モード",
+        "tooltip": "選択したモデルの操作または参照モードを選びます。選択肢はモデルによって異なります。"
+      },
+      "preset_voice": {
+        "name": "プリセット音声",
+        "tooltip": "preset_voice モードで使う音声です。"
+      },
+      "model_preset_voice": {
+        "name": "プリセット音声",
+        "tooltip": "preset_voice モードで使う音声です。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成または編集の指示文です。"
+      },
+      "model_prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成または編集の指示文です。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "モデルと経路が対応する解像度またはサイズです。"
+      },
+      "model_resolution": {
+        "name": "解像度",
+        "tooltip": "モデルと経路が対応する解像度またはサイズです。"
+      },
+      "ratio": {
+        "name": "アスペクト比",
+        "tooltip": "モデルが対応する画面比率です。"
+      },
+      "model_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "モデルが対応する画面比率です。"
+      },
+      "duration": {
+        "name": "動画の長さ",
+        "tooltip": "動画の長さ（秒）です。"
+      },
+      "model_duration": {
+        "name": "動画の長さ",
+        "tooltip": "動画の長さ（秒）です。"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "image モードでは必須です。image_1 とは別です。"
+      },
+      "model_first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "image モードでは必須です。image_1 とは別です。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "最初のフレームと一緒に接続します。"
+      },
+      "model_last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "最初のフレームと一緒に接続します。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "乱数シードです。"
+      },
+      "model_seed": {
+        "name": "シード",
+        "tooltip": "乱数シードです。"
+      },
+      "watermark": {
+        "name": "透かし",
+        "tooltip": "対応している場合に透かしを追加します。"
+      },
+      "model_watermark": {
+        "name": "透かし",
+        "tooltip": "対応している場合に透かしを追加します。"
+      },
+      "generate_audio": {
+        "name": "音声を生成",
+        "tooltip": "動画の音声を生成します。"
+      },
+      "model_generate_audio": {
+        "name": "音声を生成",
+        "tooltip": "動画の音声を生成します。"
+      },
+      "output_format": {
+        "name": "出力形式",
+        "tooltip": "出力ファイル形式を選びます。"
+      },
+      "model_output_format": {
+        "name": "出力形式",
+        "tooltip": "出力ファイル形式を選びます。"
+      },
+      "quality": {
+        "name": "品質",
+        "tooltip": "モデルが対応する品質を選びます。"
+      },
+      "model_quality": {
+        "name": "品質",
+        "tooltip": "モデルが対応する品質を選びます。"
+      },
+      "reference_images": {
+        "name": "参照画像",
+        "tooltip": "モデルが対応する最大数まで接続します。"
+      },
+      "model_reference_images": {
+        "name": "参照画像",
+        "tooltip": "モデルが対応する最大数まで接続します。"
+      },
+      "reference_videos": {
+        "name": "参照動画",
+        "tooltip": "モデルが対応する最大数まで接続します。"
+      },
+      "model_reference_videos": {
+        "name": "参照動画",
+        "tooltip": "モデルが対応する最大数まで接続します。"
+      },
+      "reference_audios": {
+        "name": "参照音声",
+        "tooltip": "モデルが対応する最大数まで接続します。"
+      },
+      "model_reference_audios": {
+        "name": "参照音声",
+        "tooltip": "モデルが対応する最大数まで接続します。"
+      },
+      "advanced_json": {
+        "name": "詳細 JSON",
+        "tooltip": "選択したモデルの追加ネイティブ JSON パラメーターです。model は URL で指定されます。"
+      },
+      "model_reference_images_image_1": {
+        "name": "参照画像 1"
+      },
+      "model_reference_images_image_2": {
+        "name": "参照画像 2"
+      },
+      "model_reference_images_image_3": {
+        "name": "参照画像 3"
+      },
+      "model_reference_images_image_4": {
+        "name": "参照画像 4"
+      },
+      "model_reference_images_image_5": {
+        "name": "参照画像 5"
+      },
+      "model_reference_images_image_6": {
+        "name": "参照画像 6"
+      },
+      "model_reference_images_image_7": {
+        "name": "参照画像 7"
+      },
+      "model_reference_images_image_8": {
+        "name": "参照画像 8"
+      },
+      "model_reference_images_image_9": {
+        "name": "参照画像 9"
+      },
+      "model_reference_images_image_10": {
+        "name": "参照画像 10"
+      },
+      "model_reference_images_image_11": {
+        "name": "参照画像 11"
+      },
+      "model_reference_images_image_12": {
+        "name": "参照画像 12"
+      },
+      "model_reference_images_image_13": {
+        "name": "参照画像 13"
+      },
+      "model_reference_images_image_14": {
+        "name": "参照画像 14"
+      },
+      "model_reference_images_image_15": {
+        "name": "参照画像 15"
+      },
+      "model_reference_images_image_16": {
+        "name": "参照画像 16"
+      },
+      "model_reference_images_image_17": {
+        "name": "参照画像 17"
+      },
+      "model_reference_images_image_18": {
+        "name": "参照画像 18"
+      },
+      "model_reference_images_image_19": {
+        "name": "参照画像 19"
+      },
+      "model_reference_images_image_20": {
+        "name": "参照画像 20"
+      },
+      "model_reference_images_image_21": {
+        "name": "参照画像 21"
+      },
+      "model_reference_images_image_22": {
+        "name": "参照画像 22"
+      },
+      "model_reference_images_image_23": {
+        "name": "参照画像 23"
+      },
+      "model_reference_images_image_24": {
+        "name": "参照画像 24"
+      },
+      "model_reference_images_image_25": {
+        "name": "参照画像 25"
+      },
+      "model_reference_images_image_26": {
+        "name": "参照画像 26"
+      },
+      "model_reference_images_image_27": {
+        "name": "参照画像 27"
+      },
+      "model_reference_images_image_28": {
+        "name": "参照画像 28"
+      },
+      "model_reference_images_image_29": {
+        "name": "参照画像 29"
+      },
+      "model_reference_images_image_30": {
+        "name": "参照画像 30"
+      },
+      "model_reference_videos_video_1": {
+        "name": "参照動画 1"
+      },
+      "model_reference_videos_video_2": {
+        "name": "参照動画 2"
+      },
+      "model_reference_videos_video_3": {
+        "name": "参照動画 3"
+      },
+      "model_reference_videos_video_4": {
+        "name": "参照動画 4"
+      },
+      "model_reference_videos_video_5": {
+        "name": "参照動画 5"
+      },
+      "model_reference_videos_video_6": {
+        "name": "参照動画 6"
+      },
+      "model_reference_videos_video_7": {
+        "name": "参照動画 7"
+      },
+      "model_reference_videos_video_8": {
+        "name": "参照動画 8"
+      },
+      "model_reference_videos_video_9": {
+        "name": "参照動画 9"
+      },
+      "model_reference_videos_video_10": {
+        "name": "参照動画 10"
+      },
+      "model_reference_audios_audio_1": {
+        "name": "参照音声 1"
+      },
+      "model_reference_audios_audio_2": {
+        "name": "参照音声 2"
+      },
+      "model_reference_audios_audio_3": {
+        "name": "参照音声 3"
+      },
+      "model_reference_audios_audio_4": {
+        "name": "参照音声 4"
+      },
+      "model_reference_audios_audio_5": {
+        "name": "参照音声 5"
+      },
+      "model_reference_audios_audio_6": {
+        "name": "参照音声 6"
+      },
+      "model_reference_audios_audio_7": {
+        "name": "参照音声 7"
+      },
+      "model_reference_audios_audio_8": {
+        "name": "参照音声 8"
+      },
+      "model_reference_audios_audio_9": {
+        "name": "参照音声 9"
+      },
+      "model_reference_audios_audio_10": {
+        "name": "参照音声 10"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "動画"
+      },
+      "2": {
+        "name": "音声"
+      },
+      "3": {
+        "name": "RAW JSON"
+      },
+      "4": {
+        "name": "COST"
+      }
+    }
+  }
+}

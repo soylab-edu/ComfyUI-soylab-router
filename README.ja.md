@@ -4,13 +4,15 @@
 
 個人の Comfy API キーで [Comfy Router](https://comfy.org/platform/router) を利用する**ローカル ComfyUI カスタムノード**です。モデルと Router の実行プロバイダーを別々に選び、モデルに応じて画像・動画・音声を接続できます。新しいノードの初期値は `BytePlus Seedance 2.5` と `higgsfield` です。参照入力は ComfyUI の Autogrow により、モデルごとの上限まで増やせます。
 
+ノードの説明、入力のヒント、料金ウィンドウは ComfyUI の **設定 → 言語** (`Comfy.Locale`) に従い、韓国語・英語・日本語・簡体字中国語に切り替わります。言語が未設定の場合は韓国語です。翻訳ファイルの導入後は ComfyUI を再起動し、ブラウザーを再読み込みしてください。モデル名とプロバイダー ID は API と同じ表記を維持します。
+
 Python 標準ライブラリから Router REST API を直接呼び出すため、クイックスタートに記載された SDK の追加インストールは不要です。ジョブをキューに送信し、実際の状態を確認してから結果をダウンロードします。キューを利用できない画像モデルのみ同期呼び出しに切り替えます。長時間の動画・音声ジョブは、同期接続の期限によって結果を失わないよう送信前に停止します。
 
 ## インストールと API キー
 
 1. このリポジトリを `ComfyUI/custom_nodes/soylab_comfy_router` に置き、ComfyUI を再起動します。V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。
 2. [Comfy 開発者プラットフォーム](https://platform.comfy.org/profile/api-keys?onboarding=router)でワークスペースの API キーを作成し、必要に応じてクレジットを追加します。
-3. ノードの `api_key` 欄に入力するか、INI ボタンで OS のテキストエディターから `API KEY.INI` を編集します。ファイルがなければボタンは **INI 파일 생성 및 키 입력하기**、あれば **API KEY.INI 열기** と表示されます。ボタンはファイルを作成・開くだけで、キーの内容をブラウザーに返しません。このファイルは Git から除外されています。共有するワークフローでは、保存され得るノード入力欄より INI ファイルの使用を推奨します。
+3. ノードの `api_key` 欄に入力するか、INI ボタンで OS のテキストエディターから `API KEY.INI` を編集します。ファイルがなければボタンは **INI ファイルを作成してキーを入力**、あれば **API KEY.INI を開く** と表示されます。ボタンはファイルを作成・開くだけで、キーの内容をブラウザーに返しません。このファイルは Git から除外されています。共有するワークフローでは、保存され得るノード入力欄より INI ファイルの使用を推奨します。
 4. **Soylab / Comfy Router → SOYLAB Comfy Router** を追加し、モデル、プロバイダー、タスクモード、出力設定を選びます。有効な画像・動画・音声出力を保存ノードにつなぎ、実行します。
 
 `workflows` フォルダーには [GPT Image 2 の画像編集例](workflows/image_edit_gpt_image_2.json)、グラフ内の[韓国語](workflows/README.ko.md)・[英語](workflows/README.en.md) Markdown メモ、[サンプル画像](workflows/soylab-sample-image.png)があります。例のワークフローに API キーは含まれません。
