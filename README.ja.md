@@ -4,6 +4,8 @@
 
 **言語:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
+![入力画像から生成動画まで接続した SOYLAB Comfy Router のワークフロー](assets/intro.png)
+
 個人の Comfy API キーで [Comfy Router](https://comfy.org/platform/router) を利用する**ローカル ComfyUI カスタムノード**です。モデルと Router の実行プロバイダーを別々に選び、モデルに応じて画像・動画・音声を接続できます。新しいノードの初期値は `BytePlus Seedance 2.5` と `higgsfield` です。参照入力は ComfyUI の Autogrow により、モデルごとの上限まで増やせます。
 
 ノードの説明、入力のヒント、料金ウィンドウは ComfyUI の **設定 → 言語** (`Comfy.Locale`) に従い、韓国語・英語・日本語・簡体字中国語に切り替わります。言語が未設定の場合は韓国語です。翻訳ファイルの導入後は ComfyUI を再起動し、ブラウザーを再読み込みしてください。モデル名とプロバイダー ID は API と同じ表記を維持します。

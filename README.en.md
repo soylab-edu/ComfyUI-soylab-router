@@ -4,6 +4,8 @@
 
 **Languages:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
+![SOYLAB Comfy Router workflow connecting an input image to a generated video](assets/intro.png)
+
 A local ComfyUI custom node that calls [Comfy Router](https://comfy.org/platform/router) with your personal Comfy API key. The purple node uses the supplied Soylab mark and purple-to-green header. Its two selection controls are **Model** and **Provider**. Model entries show names such as `Runway Gen-4 Turbo Video` and `BytePlus Seedance 2.5`; Provider lists only Router execution paths available for the chosen model. New nodes default to `BytePlus Seedance 2.5` with `higgsfield`. Reference sockets use native `Autogrow` with model-specific caps.
 
 Node descriptions, input hints, and the price panel follow ComfyUI's **Settings → Language** (`Comfy.Locale`): Korean, English, Japanese, and Simplified Chinese. Korean is the fallback when no language is set. Restart ComfyUI and reload the browser after installing locale files. Model names and provider IDs retain their API spelling.

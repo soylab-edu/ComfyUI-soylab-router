@@ -4,6 +4,8 @@
 
 **语言：** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
+![从输入图像连接到生成视频的 SOYLAB Comfy Router 工作流](assets/intro.png)
+
 这是一个使用个人 Comfy API 密钥调用 [Comfy Router](https://comfy.org/platform/router) 的**本地 ComfyUI 自定义节点**。模型与 Router 的实际执行服务商分别选择，并可根据模型连接图像、视频和音频。新节点默认选择 `BytePlus Seedance 2.5` 和 `higgsfield`。参考输入接口通过 ComfyUI 的 Autogrow 增加，数量不超过对应模型的上限。
 
 节点说明、输入提示和费用窗口会跟随 ComfyUI 的 **设置 → 语言**（`Comfy.Locale`）在韩语、英语、日语和简体中文之间切换。未设置语言时默认使用韩语。安装翻译文件后请重启 ComfyUI 并刷新浏览器。模型名称和供应商 ID 保留 API 原始拼写。
