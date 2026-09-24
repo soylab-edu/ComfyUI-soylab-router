@@ -48,15 +48,3 @@ Higgsfield 路径的 Seedance 图像转视频 API 要求可访问的图像 URL�
 如果 Router 返回 `400`，请检查模型、服务商、任务模式、图像接口的用途以及实际时长和分辨率。新版错误信息会在可获取时附上 Router 错误类型与请求 ID。此前同步视频请求即使返回 `504 deadline_exceeded`，也可能已经发送至服务商并计费，不宜直接重复提交。结果文件会在 URL 过期前立即下载，服务商原始响应则从 `RAW JSON` 输出。
 
 目前精选实现了 17 个模型；[Router 完整模型列表](https://docs.comfy.org/development/comfy-router/models)还有更多模型。个别服务商可能拒绝符合通用架构的输入；在不进行付费生成的情况下，无法保证所有组合都能成功。
-
-## 开发与发布
-
-[Router 快速入门](https://docs.comfy.org/development/comfy-router/quickstart) · [API 参考](https://docs.comfy.org/development/comfy-router/reference) · [官方合作伙伴节点源码](https://github.com/Comfy-Org/ComfyUI/tree/master/comfy_api_nodes)
-
-使用运行 ComfyUI 的 Python 环境，将仓库的上级目录及 ComfyUI 源码加入 `PYTHONPATH` 后运行测试：
-
-```bash
-PYTHONPATH="..:/path/to/ComfyUI" python -m unittest discover -s tests -v
-```
-
-官方 ComfyUI-Manager 登记要求见 [REGISTRY.md](REGISTRY.md)。此节点尚未发布到 Registry。

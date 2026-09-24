@@ -48,15 +48,3 @@ Higgsfield 경로의 Seedance 이미지 입력은 해당 업체의 이미지→�
 Router가 `400`으로 요청을 거절하면 모델·공급자·작업 모드, 이미지 슬롯의 역할, 실제 길이/해상도를 확인하세요. 최신 오류에는 가능하면 Router 오류 유형과 요청 ID도 표시합니다. `504 deadline_exceeded`였던 과거 동기식 영상 요청은 업체에 도달해 과금됐을 수도 있으므로 무작정 재실행하지 마세요. 생성 결과는 URL 만료 전에 즉시 내려받고, 공급자의 원본 응답은 `RAW JSON`으로 출력합니다.
 
 현재 목록은 17개 모델을 선별해 구현한 것입니다. [Router 전체 모델 목록](https://docs.comfy.org/development/comfy-router/models)에는 더 많은 모델이 있습니다. 일부 공급자는 공통 스키마에 맞는 입력도 자체 제한으로 거절할 수 있어, 유료 생성 없이 모든 조합의 실제 성공을 보장할 수는 없습니다.
-
-## 개발·등록
-
-[Router 빠른 시작](https://docs.comfy.org/development/comfy-router/quickstart) · [API 레퍼런스](https://docs.comfy.org/development/comfy-router/reference) · [공식 파트너 노드 소스](https://github.com/Comfy-Org/ComfyUI/tree/master/comfy_api_nodes)
-
-ComfyUI 실행에 사용하는 Python 환경에서 저장소의 상위 폴더와 ComfyUI 소스를 `PYTHONPATH`에 넣고 테스트할 수 있습니다.
-
-```bash
-PYTHONPATH="..:/path/to/ComfyUI" python -m unittest discover -s tests -v
-```
-
-공식 ComfyUI-Manager 등록 조건은 [REGISTRY.md](REGISTRY.md)에 정리했습니다. 이 노드는 아직 Registry에 게시되지 않았습니다.

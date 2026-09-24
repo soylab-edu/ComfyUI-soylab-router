@@ -48,15 +48,3 @@ Higgsfield 経路の Seedance 画像は、画像から動画への API がアク
 Router が `400` を返した場合は、モデル、プロバイダー、モード、画像スロットの役割、実際の長さと解像度を確認してください。新しいエラー表示には、利用可能なら Router のエラー種別とリクエスト ID を含めます。過去の同期動画リクエストで `504 deadline_exceeded` が出ても、生成・課金済みの可能性があります。安易に再実行しないでください。結果ファイルは URL の期限前にすぐダウンロードし、元のプロバイダー応答を `RAW JSON` に出力します。
 
 現在は 17 モデルを選定して実装しています。[Router の全モデル一覧](https://docs.comfy.org/development/comfy-router/models)にはさらに多くのモデルがあります。共通スキーマに適合する入力でも、個々のプロバイダーの制限で拒否される場合があります。有料生成を行わずに、すべての組み合わせでの成功を保証することはできません。
-
-## 開発・登録
-
-[Router クイックスタート](https://docs.comfy.org/development/comfy-router/quickstart) · [API リファレンス](https://docs.comfy.org/development/comfy-router/reference) · [公式パートナーノードのソース](https://github.com/Comfy-Org/ComfyUI/tree/master/comfy_api_nodes)
-
-ComfyUI の Python 環境を使い、リポジトリの親ディレクトリと ComfyUI のソースを `PYTHONPATH` に設定してテストできます。
-
-```bash
-PYTHONPATH="..:/path/to/ComfyUI" python -m unittest discover -s tests -v
-```
-
-公式 ComfyUI-Manager 登録に関する確認事項は [REGISTRY.md](REGISTRY.md) を参照してください。このノードはまだ Registry に公開されていません。
