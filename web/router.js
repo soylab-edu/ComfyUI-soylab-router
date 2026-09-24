@@ -39,7 +39,7 @@ function priceSignature(node, spec, route) {
     spec.model_id, route,
     field(node, "resolution", ""), field(node, "ratio", ""), field(node, "duration", ""),
     field(node, "quality", ""), field(node, "generate_audio", ""), field(node, "mode", ""),
-    field(node, "output_format", ""),
+    field(node, "output_format", ""), field(node, "generation_type", ""), field(node, "type", ""),
     frames.firstFrame, frames.lastFrame,
     frames.images, refCount(node, "videos"), refCount(node, "audios"),
   ]);
@@ -198,7 +198,14 @@ function selected(node) {
 }
 
 function field(node, name, fallback = undefined) {
-  return widget(node, `${inputPrefix(node)}.${name}`)?.value ?? fallback;
+  const prefix = inputPrefix(node);
+  const direct = widget(node, prefix + "." + name);
+  if (direct) return direct.value ?? fallback;
+  const spec = selected(node).spec;
+  const aliases = name === "ratio" ? ["ratio", "aspect_ratio", "aspectRatio"]
+    : name === "resolution" ? ["resolution", "size", "target_resolution"] : [name];
+  const control = spec?.controls?.find((item) => aliases.includes(item.path?.[item.path.length - 1]));
+  return control ? widget(node, prefix + "." + control.name)?.value ?? fallback : fallback;
 }
 
 function refCount(node, type) {
@@ -316,6 +323,65 @@ function estimate(node, spec) {
 let pricePopup = null;
 let pricePopupObserver = null;
 let priceTooltip = null;
+let modelPopup = null;
+
+function closeModelSearch() {
+  modelPopup?.remove();
+  modelPopup = null;
+}
+
+function openModelSearch(node) {
+  closeModelSearch();
+  const popup = document.createElement("section");
+  popup.className = "soylab-model-search";
+  popup.setAttribute("role", "dialog");
+  popup.setAttribute("aria-label", tr("modelSearch"));
+  const input = document.createElement("input");
+  input.type = "search";
+  input.placeholder = tr("modelSearchHint");
+  input.setAttribute("aria-label", tr("modelSearch"));
+  const list = document.createElement("div");
+  list.className = "soylab-model-search-list";
+  const render = () => {
+    const term = input.value.trim().toLocaleLowerCase();
+    list.replaceChildren();
+    const matches = catalog.filter((spec) => (modelLabel(spec) + " " + spec.model_id).toLocaleLowerCase().includes(term));
+    for (const spec of matches) {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.textContent = modelLabel(spec);
+      option.title = spec.model_id;
+      option.onclick = () => {
+        const selectedWidget = widget(node, "model");
+        if (selectedWidget) {
+          const old = selectedWidget.value;
+          selectedWidget.value = modelLabel(spec);
+          selectedWidget.callback?.(selectedWidget.value, app.canvas, node);
+          node.onWidgetChanged?.("model", selectedWidget.value, old, selectedWidget);
+          node.setDirtyCanvas?.(true, true);
+          queueVueSync(node.id);
+        }
+        closeModelSearch();
+      };
+      list.append(option);
+    }
+    if (!matches.length) {
+      const empty = document.createElement("p");
+      empty.textContent = tr("modelNoMatch");
+      list.append(empty);
+    }
+  };
+  input.oninput = render;
+  popup.onkeydown = (event) => {
+    if (event.key === "Escape") closeModelSearch();
+    if (event.key === "Enter" && document.activeElement === input) list.querySelector("button")?.click();
+  };
+  popup.append(input, list);
+  document.body.append(popup);
+  modelPopup = popup;
+  render();
+  input.focus();
+}
 
 function showPriceTooltip(label, event) {
   if (!label || !Number.isFinite(event?.clientX) || !Number.isFinite(event?.clientY)) return;
@@ -419,7 +485,7 @@ function refreshPricePopup() {
     return;
   }
   pricePopup.append(line("div", "soylab-price-model", modelLabel(spec)));
-  const settings = [resolution, spec.output === "VIDEO" ? tr("seconds", { seconds: duration }) : "", ratio].filter(Boolean).join(" · ");
+  const settings = [resolution, (spec.output === "VIDEO" || spec.dual_output && (field(node, "generation_type") || field(node, "type")) === "video") ? tr("seconds", { seconds: duration }) : "", ratio].filter(Boolean).join(" · ");
   if (settings) pricePopup.append(line("div", "soylab-price-settings", settings));
   const selectedRate = actualForSelection
     ? tr("actualInline", { credits: priceText(Number(actualCredits)) })
@@ -612,6 +678,12 @@ function syncVueNode(id) {
     costButton.classList.add("soylab-cost-button");
     if (costButton.textContent.trim() !== tr("costButton")) costButton.textContent = tr("costButton");
   }
+  const searchButton = host.querySelector("button.soylab-model-search-button")
+    || [...host.querySelectorAll("button")].find((button) => button.textContent.trim() === tr("modelSearch"));
+  if (searchButton) {
+    searchButton.classList.add("soylab-model-search-button");
+    if (searchButton.textContent.trim() !== tr("modelSearch")) searchButton.textContent = tr("modelSearch");
+  }
   const keyButton = host.querySelector("button.soylab-key-button") || [...host.querySelectorAll("button")].find((button) => keyLabels.includes(button.textContent.trim()));
   if (keyButton) {
     keyButton.classList.add("soylab-key-button");
@@ -704,7 +776,7 @@ function syncVueNode(id) {
     const slot = slots[index];
     const text = slot?.querySelector("span.truncate");
     if (!text) return;
-    const supported = spec?.output === kind;
+    const supported = spec?.output === kind || (spec?.dual_output && kind === "VIDEO");
     slot.classList.toggle("soylab-unsupported-output", !supported);
     const wanted = supported ? tr(`output${kind[0]}${kind.slice(1).toLowerCase()}`) : "";
     if (text.textContent !== wanted) text.textContent = wanted;
@@ -754,6 +826,28 @@ function installVueHeaderSupport() {
       background: #21182b; color: #fff; box-shadow: 0 8px 24px #0009;
       font: 13px/1.4 Inter, Arial, sans-serif; white-space: normal;
       overflow-wrap: anywhere;
+    }
+    .soylab-model-search {
+      position: fixed; z-index: 100002; top: max(48px, 8vh); left: 50%;
+      transform: translateX(-50%); width: min(540px, calc(100vw - 24px));
+      max-height: min(620px, 78vh); display: flex; flex-direction: column;
+      padding: 12px; border: 1px solid #765ca0; border-radius: 14px;
+      background: #21192c; color: #fff; box-shadow: 0 18px 50px #000a;
+      font: 14px/1.4 Inter, Arial, sans-serif;
+    }
+    .soylab-model-search input {
+      box-sizing: border-box; width: 100%; padding: 12px;
+      border: 1px solid #8066a5; border-radius: 9px;
+      background: #332b3e; color: #fff; outline: none;
+    }
+    .soylab-model-search-list { overflow-y: auto; margin-top: 8px; }
+    .soylab-model-search-list button {
+      display: block; width: 100%; padding: 10px 12px; border: 0;
+      border-radius: 7px; background: transparent; color: #fff;
+      text-align: left; cursor: pointer;
+    }
+    .soylab-model-search-list button:hover, .soylab-model-search-list button:focus {
+      background: #422670;
     }
     .soylab-router-vue .soylab-provider-rate {
       grid-column: 1 / -1; margin: -2px 12px 4px; color: #dcc5f2;
@@ -878,8 +972,8 @@ function updateOutputLabels(node) {
   ["IMAGE", "VIDEO", "AUDIO"].forEach((kind, index) => {
     const output = node.outputs[index];
     if (!output) return;
-    const name = spec?.output === kind ? tr(`output${kind[0]}${kind.slice(1).toLowerCase()}`) : "";
-    const color = spec?.output === kind ? "#BB7BFF" : BODY_BG;
+    const name = (spec?.output === kind || (spec?.dual_output && kind === "VIDEO")) ? tr(`output${kind[0]}${kind.slice(1).toLowerCase()}`) : "";
+    const color = (spec?.output === kind || (spec?.dual_output && kind === "VIDEO")) ? "#BB7BFF" : BODY_BG;
     if (output.name !== name || output.color !== color) changed = true;
     output.name = name;
     output.color = color;
@@ -998,6 +1092,19 @@ function addPriceButton(node) {
   }
 }
 
+function addModelSearchButton(node) {
+  if (node.widgets?.some((item) => item._soylabModelSearchButton)) return;
+  const button = node.addWidget("button", tr("modelSearch"), null, () => openModelSearch(node));
+  button._soylabModelSearchButton = true;
+  button.serialize = false;
+  const index = node.widgets.indexOf(button);
+  const modelIndex = node.widgets.findIndex((item) => item.name === "model");
+  if (index >= 0 && modelIndex >= 0) {
+    node.widgets.splice(index, 1);
+    node.widgets.splice(modelIndex, 0, button);
+  }
+}
+
 async function openApiKeyFile() {
   try {
     const response = await fetch(api.apiURL("/soylab_router/open_api_key"), { method: "POST" });
@@ -1038,6 +1145,7 @@ app.registerExtension({
       addKeyHelp(this);
       addKeyButton(this);
       addPriceButton(this);
+      addModelSearchButton(this);
       installSelectionWatch(this);
       setTimeout(() => {
         updateOutputLabels(this);
@@ -1083,6 +1191,11 @@ setInterval(() => {
   if (next === activeLocale) return;
   activeLocale = next;
   syncKeyButtons();
-  for (const node of app.graph?._nodes || []) if (node.type === NODE_ID) node.setDirtyCanvas?.(true, true);
+  for (const node of app.graph?._nodes || []) if (node.type === NODE_ID) {
+    const search = node.widgets?.find((item) => item._soylabModelSearchButton);
+    if (search) search.name = tr("modelSearch");
+    node.setDirtyCanvas?.(true, true);
+    queueVueSync(node.id);
+  }
   refreshPricePopup();
 }, 1000);

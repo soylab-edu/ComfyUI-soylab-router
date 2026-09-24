@@ -1,7 +1,7 @@
 """Comfy Router model metadata loaded from the single editable data file."""
 
 import json
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 
@@ -32,6 +32,12 @@ class ModelSpec:
     requires_video: bool = False
     supports_audio_only: bool = False
     display_name: str = ""
+    prompt_required: bool = True
+    prompt_path: tuple[str, ...] = ()
+    controls: tuple[dict, ...] = ()
+    media_fields: tuple[dict, ...] = ()
+    request_template: dict = field(default_factory=dict)
+    dual_output: bool = False
 
 
 def _model(row: dict) -> ModelSpec:
@@ -39,6 +45,9 @@ def _model(row: dict) -> ModelSpec:
     values = {key: value for key, value in row.items() if key in allowed}
     for name in ("resolutions", "ratios", "durations", "qualities", "modes", "output_formats"):
         values[name] = tuple(values.get(name) or ())
+    values["prompt_path"] = tuple(values.get("prompt_path") or ())
+    values["controls"] = tuple(values.get("controls") or ())
+    values["media_fields"] = tuple(values.get("media_fields") or ())
     return ModelSpec(**values)
 
 

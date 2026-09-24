@@ -21,6 +21,8 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 
 ## 모델과 작업 모드
 
+현재 [Router 공식 목록](https://docs.comfy.org/development/comfy-router/models)의 이미지·비디오 모델 **154개**를 등록했습니다. 노드의 **모델 검색**을 누르고 이름이나 ID 일부를 입력하면 목록이 좁혀집니다. 예를 들어 `wa`를 입력하면 Wan 모델이 보입니다. 아래 표는 대표 예시입니다. 일반 모델의 입력란은 [모델별 요청 스키마](model-schemas.json)의 필드 이름을 따르며, Wan·Veo·Qwen 등 중첩 미디어 요청은 파트너 API 노드의 연결 방식에 맞췄습니다. 드문 추가 필드는 `advanced_json`으로 전달할 수 있습니다.
+
 | 제작사/계열 | 포함 모델 | 주요 출력 |
 | --- | --- | --- |
 | Runway | Gen-4 Turbo Video, Gen-4 Image, Aleph 2 | 영상·이미지 |
@@ -43,7 +45,7 @@ Higgsfield 경로의 Seedance 이미지 입력은 해당 업체의 이미지→�
 
 상단 가격 표시와 **Router 공급자별 비용 확인** 창은 모델·공급자·해상도·길이 등에 따라 바뀝니다. 길어서 잘리는 상단 배지에 마우스를 올리면 전체 문구가 표시됩니다. `Comfy`의 공개 단가는 [공식 파트너 노드 가격표](https://docs.comfy.org/tutorials/partner-nodes/pricing)를 기준으로 추정합니다. Higgsfield Seedance 2.5는 공개 토큰 요율에 선택한 해상도·화면비·초수를 적용해 `약 X C/N초`로 표시합니다. 다른 공급자의 **직결 API 가격**도 날짜와 출처를 기록한 비교 자료이며 Router 청구액을 보장하지 않습니다. 달러→크레딧 참고 환산에는 Comfy가 공개한 **$1 = 211 C**를 사용합니다. 실제 **사용 크레딧**은 Router가 `X-Comfy-Credits-Used`를 제공할 때만 표시합니다. 값이 없는 응답을 `0 C`로 처리하지 않으며, 이 경우 Comfy Credit History에서 확인해야 합니다.
 
-가격·모델·공급자·지원 설정을 갱신할 때는 [`web/router-data.json`](web/router-data.json)을 수정합니다. Python 노드와 브라우저 표시가 모두 이 파일을 읽습니다. 가격 출처 URL과 확인 날짜를 함께 기록하세요. 새 모델의 요청·응답 형식이 기존 어댑터와 다르면 코드와 스키마 확인도 필요합니다. 데이터 변경 후 ComfyUI를 재시작하고 브라우저를 새로고침하세요.
+가격·모델·공급자·지원 설정은 [`web/router-data.json`](web/router-data.json)에, Router 요청·응답 스키마는 [`model-schemas.json`](model-schemas.json)에 기록합니다. Python 노드와 브라우저 표시가 이 파일들을 읽습니다. [갱신 스크립트](scripts/refresh_media_catalog.py)는 공식 모델·공급자 목록과 인증된 OpenAPI를 다시 읽어 카탈로그를 갱신합니다. 로컬 `API KEY.INI` 또는 `COMFY_API_KEY`를 사용하며 키를 생성 파일에 쓰지 않습니다. 갱신 후 변경 내용을 검토하고 커밋하세요. 가격 출처 URL과 확인 날짜는 직접 검증해 기록해야 합니다. 데이터 변경 후 ComfyUI를 재시작하고 브라우저를 새로고침하세요.
 
 ## 실행 상태와 오류
 
@@ -51,4 +53,4 @@ Higgsfield 경로의 Seedance 이미지 입력은 해당 업체의 이미지→�
 
 Router가 `400`으로 요청을 거절하면 모델·공급자·작업 모드, 이미지 슬롯의 역할, 실제 길이/해상도를 확인하세요. 최신 오류에는 가능하면 Router 오류 유형과 요청 ID도 표시합니다. `504 deadline_exceeded`였던 과거 동기식 영상 요청은 업체에 도달해 과금됐을 수도 있으므로 무작정 재실행하지 마세요. 생성 결과는 URL 만료 전에 즉시 내려받고, 공급자의 원본 응답은 `RAW JSON`으로 출력합니다.
 
-현재 목록은 17개 모델을 선별해 구현한 것입니다. [Router 전체 모델 목록](https://docs.comfy.org/development/comfy-router/models)에는 더 많은 모델이 있습니다. 일부 공급자는 공통 스키마에 맞는 입력도 자체 제한으로 거절할 수 있어, 유료 생성 없이 모든 조합의 실제 성공을 보장할 수는 없습니다.
+모델 154개의 기본 요청과 응답 예시를 저장한 스키마로 검사했습니다. 모든 모델·입력 조합을 유료 생성으로 검증한 것은 아니므로, 공급자 자체 제한이나 미리 공개되지 않은 요금은 실행 결과로 확인해야 합니다.

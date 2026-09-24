@@ -3,9 +3,34 @@
 import base64
 
 
+def _path(value, *parts):
+    for part in parts:
+        try:
+            value = value[part]
+        except (KeyError, IndexError, TypeError):
+            return None
+    return value
+
+
 def media_reference(result: dict, kind: str) -> tuple[str | bytes | None, str | None]:
     """Return (URL/data URI/bytes, MIME hint) for the first generated asset."""
     if kind == "VIDEO":
+        for path in (
+            ("output", "video_url"), ("data", "task_result", "videos", 0, "url"),
+            ("data", 0, "outputs", 0, "url"), ("response", "videos", 0, "gcsUri"),
+            ("assets", "video"), ("video", "url"), ("result", "video_url"),
+            ("result", "video", "url"), ("generation_url",), ("output_url",),
+            ("outputUrl",), ("data", "video_url"), ("result", "sample"),
+            ("result", "draft_cache"), ("task", "content", "url"),
+            ("data", "outputs", 0), ("output", "render"),
+            ("output", 0, "url"),
+        ):
+            found = _path(result, *path)
+            if isinstance(found, str) and found:
+                return found, "video/mp4"
+        encoded = _path(result, "response", "videos", 0, "bytesBase64Encoded")
+        if isinstance(encoded, str) and encoded:
+            return base64.b64decode(encoded), "video/mp4"
         content = result.get("content")
         if isinstance(content, dict) and content.get("video_url"):
             return content["video_url"], "video/mp4"
@@ -20,6 +45,23 @@ def media_reference(result: dict, kind: str) -> tuple[str | bytes | None, str | 
         if isinstance(result.get("url"), str):
             return result["url"], "audio/wav"
     elif kind == "IMAGE":
+        for path in (
+            ("output", "results", 0, "url"), ("output", "render"),
+            ("result", "sample"), ("result", "image_url"),
+            ("images", 0, "url"), ("data", "task_result", "images", 0, "url"),
+            ("predictions", 0, "image", "uri"), ("predictions", 0, "url"),
+            ("generation_url",), ("output_url",), ("data", "generated", 0),
+            ("data", "outputs", 0), ("result", "urls", 0),
+            ("assets", "image"), ("output", 0, "url"),
+            ("output", "choices", 0, "message", "content", 0, "image"),
+        ):
+            found = _path(result, *path)
+            if isinstance(found, str) and found:
+                return found, "image/png"
+        for path in (("predictions", 0, "bytesBase64Encoded"), ("predictions", 0, "image", "bytesBase64Encoded")):
+            encoded = _path(result, *path)
+            if isinstance(encoded, str) and encoded:
+                return base64.b64decode(encoded), "image/png"
         output = result.get("output")
         if isinstance(output, list) and output and isinstance(output[0], str):
             return output[0], "image/png"

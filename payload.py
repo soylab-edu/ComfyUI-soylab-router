@@ -3,6 +3,9 @@
 import json
 
 from .catalog import ALT_PROVIDERS, ALT_PROVIDER_RESOLUTIONS, ModelSpec, SEED_AUDIO_VOICES
+from .native_payload import build_native_payload, deep_merge
+from .wan_payload import build_wan_payload
+from .special_payload import build_special_payload
 
 
 def _default(values: dict, key: str, fallback):
@@ -19,14 +22,15 @@ def _validate_selection(spec: ModelSpec, values: dict, images, videos, audios):
     if spec.requires_video and not videos:
         raise ValueError(f"{spec.model_id}: 비디오 입력이 필요합니다.")
     resolution = values.get("resolution")
-    if resolution and resolution not in spec.resolutions:
-        raise ValueError(f"{spec.model_id}: 해상도 {resolution}은(는) Not Support입니다.")
-    ratio = values.get("ratio")
-    if ratio and ratio not in spec.ratios:
-        raise ValueError(f"{spec.model_id}: 비율 {ratio}은(는) Not Support입니다.")
-    duration = values.get("duration")
-    if duration is not None and spec.durations and int(duration) not in spec.durations:
-        raise ValueError(f"{spec.model_id}: 길이 {duration}초는 Not Support입니다.")
+    if spec.adapter != "native_schema":
+        if resolution and resolution not in spec.resolutions:
+            raise ValueError(f"{spec.model_id}: 해상도 {resolution}은(는) Not Support입니다.")
+        ratio = values.get("ratio")
+        if ratio and ratio not in spec.ratios:
+            raise ValueError(f"{spec.model_id}: 비율 {ratio}은(는) Not Support입니다.")
+        duration = values.get("duration")
+        if duration is not None and spec.durations and (duration if duration == "auto" else int(duration)) not in spec.durations:
+            raise ValueError(f"{spec.model_id}: 길이 {duration}초는 Not Support입니다.")
     provider = values.get("execution_provider") or "Comfy"
     if provider != "Comfy" and provider not in ALT_PROVIDERS.get(spec.model_id, ()):
         raise ValueError(f"{spec.model_id}: {provider} 경로는 Not Support입니다.")
@@ -35,18 +39,24 @@ def _validate_selection(spec: ModelSpec, values: dict, images, videos, audios):
         raise ValueError(f"{spec.model_id}: {provider} 경로의 {resolution} 해상도는 Not Support입니다. 지원 해상도: {', '.join(supported)}")
 
 
-def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list[str], audios: list[str], advanced_json: str = "", *, first_frame=None, last_frame=None) -> tuple[dict, str]:
+def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list[str], audios: list[str], advanced_json: str = "", *, first_frame=None, last_frame=None, media_values=None) -> tuple[dict, str]:
     """Media values are data URIs, public signed URLs, or raw base64 as needed."""
     _validate_selection(spec, values, images, videos, audios)
     prompt = str(values.get("prompt", "")).strip()
-    if not prompt:
+    if spec.prompt_required and not prompt:
         raise ValueError("프롬프트를 입력하세요.")
     resolution = _default(values, "resolution", spec.resolutions[0] if spec.resolutions else None)
     ratio = _default(values, "ratio", spec.ratios[0] if spec.ratios else None)
     duration = _default(values, "duration", spec.durations[0] if spec.durations else None)
     provider = values.get("execution_provider") or "Comfy"
 
-    if spec.adapter == "runway_video":
+    if spec.adapter == "native_schema":
+        payload = build_native_payload(spec, values, media_values or {})
+    elif spec.adapter in ("wan_image", "wan_video"):
+        payload = build_wan_payload(spec, values, images, videos, audios)
+    elif spec.adapter in ("imagen_image", "veo_video", "qwen_image", "minimax_video", "synclabs_video"):
+        payload = build_special_payload(spec, values, images, videos, audios)
+    elif spec.adapter == "runway_video":
         payload = {"promptImage": images[0], "promptText": prompt, "ratio": resolution, "duration": int(duration), "seed": int(values.get("seed") or 0)}
     elif spec.adapter == "runway_image":
         payload = {"promptText": prompt, "ratio": resolution}
@@ -159,7 +169,10 @@ def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list
             raise ValueError("추가 JSON은 객체여야 합니다.")
         if "model" in extra:
             raise ValueError("model은 Router URL에서 지정하므로 추가 JSON에 넣을 수 없습니다.")
-        payload.update(extra)
+        if spec.adapter == "native_schema":
+            deep_merge(payload, extra)
+        else:
+            payload.update(extra)
     supported = ALT_PROVIDER_RESOLUTIONS.get((spec.model_id, provider))
     if supported and payload.get("resolution") not in supported:
         raise ValueError(f"{spec.model_id}: {provider} 경로의 {payload.get('resolution')} 해상도는 Not Support입니다. 지원 해상도: {', '.join(supported)}")

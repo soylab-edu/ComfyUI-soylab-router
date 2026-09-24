@@ -131,14 +131,57 @@ def _model_inputs(spec):
     route_options = ["Comfy", *ALT_PROVIDERS.get(spec.model_id, ())]
     default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
     inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="Router 실행 경로입니다. Comfy는 파트너 모델의 기본 경로이며 모델 제작사(예: Runway)와는 다른 개념입니다. 공식 대체 경로만 선택지에 표시됩니다.")]
-    if spec.adapter == "seedance":
+    if spec.adapter == "wan_video" and spec.modes:
+        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), default="auto", display_name="작업 모드"))
+    if spec.model_id == "wan/wan2.7-videoedit":
+        inputs.append(IO.Combo.Input("audio_setting", options=["auto", "origin"], default="auto",
+                                     tooltip="auto=오디오 자동 결정 · origin=원본 오디오 유지"))
+    elif spec.adapter == "seedance":
         inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="작업 모드", default=spec.modes[0], tooltip="image 또는 이미지 전용 auto 모드: image_1=첫 프레임, image_2=마지막 프레임. reference 모드: 참조 이미지."))
     elif spec.adapter == "seedream" and spec.modes:
         inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="프롬프트 최적화 모드", default=spec.modes[0], tooltip="참조 이미지를 사용할 때 standard=품질 우선, fast=속도 우선. Seedream 5.0 Pro에서 지원합니다."))
     elif spec.adapter == "seed_audio" and spec.modes:
         inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="참조 모드", default=spec.modes[0], tooltip="auto=연결된 입력에서 판단 · text=텍스트만 · audio=오디오 참조 · image=이미지 참조 · preset_voice=기본 음성"))
         inputs.append(IO.Combo.Input("preset_voice", options=list(SEED_AUDIO_VOICES), default=next(iter(SEED_AUDIO_VOICES)), tooltip="preset_voice 모드에서 사용할 기본 음성"))
+    if spec.adapter == "native_schema":
+        if spec.prompt_path:
+            inputs.append(IO.String.Input("prompt", default="", multiline=True, tooltip="모델의 프롬프트 또는 편집 지시문"))
+        for item in spec.controls:
+            name = item["name"]
+            default = item.get("default")
+            options = item.get("options")
+            if options:
+                inputs.append(IO.Combo.Input(name, options=options, default=default if default in options else options[0]))
+            elif item["kind"] == "boolean":
+                inputs.append(IO.Boolean.Input(name, default=bool(default) if default is not None else False))
+            elif item["kind"] == "integer":
+                inputs.append(IO.Int.Input(name, default=int(default) if default is not None else 0,
+                                           min=int(item.get("min", -2147483648)), max=int(item.get("max", 2147483647))))
+            elif item["kind"] == "number":
+                inputs.append(IO.Float.Input(name, default=float(default) if default is not None else 0.0))
+            else:
+                inputs.append(IO.String.Input(name, default=str(default) if default is not None else "",
+                                               multiline=name.endswith("negative_prompt")))
+        for item in spec.media_fields:
+            name = item["name"]
+            kind = {"image": IO.Image, "video": IO.Video, "audio": IO.Audio}[item["kind"]]
+            if item["array"]:
+                inputs.append(IO.Autogrow.Input(
+                    name, template=IO.Autogrow.TemplateNames(
+                        kind.Input("media", optional=True), names=[f"item_{i}" for i in range(1, 11)], min=0)))
+            else:
+                inputs.append(kind.Input(name, optional=True))
+        return inputs
     inputs.append(IO.String.Input("prompt", default="", multiline=True, tooltip="생성 또는 편집 프롬프트"))
+    if spec.adapter in ("wan_image", "wan_video"):
+        inputs.append(IO.String.Input("negative_prompt", default="", multiline=True, optional=True, tooltip="피할 요소"))
+    if spec.adapter in ("wan_image", "qwen_image"):
+        default_size = 1024 if spec.adapter == "qwen_image" else 1280
+        maximum = 2560 if spec.adapter == "qwen_image" else 2048
+        inputs.append(IO.Int.Input("width", default=default_size, min=384, max=maximum, step=16))
+        inputs.append(IO.Int.Input("height", default=default_size, min=384, max=maximum, step=16))
+    if spec.adapter == "qwen_image":
+        inputs.append(IO.String.Input("negative_prompt", default="", multiline=True, optional=True))
     if spec.resolutions:
         inputs.append(IO.Combo.Input("resolution", options=list(spec.resolutions), default=spec.resolutions[0], tooltip="모델에서 지원하는 해상도 또는 크기"))
     if spec.ratios:
@@ -155,6 +198,23 @@ def _model_inputs(spec):
         inputs.append(IO.Boolean.Input("generate_audio", default=True, tooltip="영상에 오디오 생성"))
         if spec.output_formats:
             inputs.append(IO.Combo.Input("output_format", options=list(spec.output_formats), default=spec.output_formats[0]))
+    if spec.adapter in ("wan_image", "wan_video"):
+        inputs.append(IO.Int.Input("seed", default=0, min=0, max=2147483647))
+        inputs.append(IO.Boolean.Input("watermark", default=False))
+        if spec.adapter == "wan_video":
+            model_name = spec.model_id.split("/", 1)[1]
+            legacy_generation = model_name.startswith(("wan2.5", "wan2.6")) and "-r2v" not in model_name
+            if model_name.startswith("wan3.0") or legacy_generation:
+                inputs.append(IO.Boolean.Input("generate_audio", default=model_name.startswith("wan3.0")))
+            if model_name.startswith("wan3.0") or legacy_generation or model_name in ("wan2.7-t2v", "wan2.7-i2v"):
+                inputs.append(IO.Boolean.Input("prompt_extend", default=True))
+            if model_name.startswith(("wan2.5", "wan2.6")):
+                inputs.append(IO.Combo.Input("shot_type", options=["single", "multi"], default="single"))
+    if spec.adapter == "veo_video":
+        inputs.append(IO.Boolean.Input("generate_audio", default=False))
+        inputs.append(IO.Int.Input("seed", default=0, min=0, max=2147483647))
+    if spec.adapter == "minimax_video":
+        inputs.append(IO.Int.Input("seed", default=0, min=0, max=2147483647))
     if spec.qualities:
         inputs.append(IO.Combo.Input("quality", options=list(spec.qualities), default=spec.qualities[0]))
     inputs.extend(_media_inputs(spec))
@@ -283,6 +343,49 @@ class SoylabComfyRouter(IO.ComfyNode):
         if not key:
             raise ValueError("개인 API 키를 입력하거나 API KEY.INI 파일에 저장하세요.")
         spec, values = _selection(model)
+        if spec.adapter == "native_schema":
+            output_kind = "VIDEO" if spec.dual_output and (
+                values.get("generation_type") or values.get("type")) == "video" else spec.output
+            media_values = {}
+            for item in spec.media_fields:
+                raw = values.get(item["name"])
+                inputs = _ordered_values(raw) if item["array"] else ([raw] if raw is not None else [])
+                urls = []
+                for asset in inputs:
+                    report("uploading")
+                    if item["kind"] == "image":
+                        image = image_data_uri(asset)
+                        data = base64.b64decode(image.split(",", 1)[1], validate=True)
+                        if item.get("encoding") == "base64":
+                            urls.append(image.split(",", 1)[1])
+                            continue
+                        suffix, mime = "png", "image/png"
+                    elif item["kind"] == "video":
+                        data = video_bytes(asset)
+                        suffix, mime = "mp4", "video/mp4"
+                    else:
+                        data = audio_wav_bytes(asset)
+                        suffix, mime = "wav", "audio/wav"
+                    urls.append(await asyncio.to_thread(
+                        upload_asset, data, f"soylab-{uuid4().hex}.{suffix}", mime, key))
+                media_values[item["name"]] = urls if item["array"] else (urls[0] if urls else None)
+            payload, provider = build_payload(spec, values, [], [], [], advanced_json, media_values=media_values)
+            result, actual_credits = await asyncio.to_thread(
+                run_model, spec.model_id, payload, key, provider, report, output_kind == "IMAGE")
+            report("downloading")
+            reference, mime = media_reference(result, output_kind)
+            if reference is None:
+                raise RouterError("Router가 완료되었지만 결과 미디어를 찾지 못했습니다. RAW JSON 구조를 확인하세요.")
+            data, _ = (reference, mime) if isinstance(reference, bytes) else await asyncio.to_thread(download_asset, reference)
+            image = image_from_bytes(data) if output_kind == "IMAGE" else None
+            video = video_from_bytes(data) if output_kind == "VIDEO" else None
+            raw = json.dumps(result, ensure_ascii=False, indent=2)
+            cost_text = f"{spec.model_id} · {provider} · " + (
+                f"사용 크레딧 {actual_credits:g} C" if actual_credits is not None
+                else "사용 크레딧 확인 불가 · Comfy Credit History 확인")
+            report("completed")
+            return IO.NodeOutput(image, video, None, raw, cost_text,
+                                 ui={"soylab_router_cost": [{"model_id": spec.model_id, "provider": provider, "credits": actual_credits}]})
         image_inputs = values.get("reference_images")
         first_input = values.get("first_frame")
         last_input = values.get("last_frame")
@@ -297,6 +400,29 @@ class SoylabComfyRouter(IO.ComfyNode):
             image_values = _ordered_values(image_inputs)
         images = [image_data_uri(image) for image in image_values]
         audios = ["data:audio/wav;base64," + base64.b64encode(audio_wav_bytes(audio)).decode("ascii") for audio in audio_inputs]
+        if spec.adapter in ("wan_image", "wan_video"):
+            uploaded_images = []
+            for image in images:
+                report("uploading")
+                data = base64.b64decode(image.split(",", 1)[1], validate=True)
+                uploaded_images.append(await asyncio.to_thread(
+                    upload_asset, data, f"soylab-{uuid4().hex}.png", "image/png", key))
+            images = uploaded_images
+            uploaded_audios = []
+            for audio in audios:
+                report("uploading")
+                data = base64.b64decode(audio.split(",", 1)[1], validate=True)
+                uploaded_audios.append(await asyncio.to_thread(
+                    upload_asset, data, f"soylab-{uuid4().hex}.wav", "audio/wav", key))
+            audios = uploaded_audios
+        elif spec.adapter == "synclabs_video":
+            uploaded_audios = []
+            for audio in audios:
+                report("uploading")
+                data = base64.b64decode(audio.split(",", 1)[1], validate=True)
+                uploaded_audios.append(await asyncio.to_thread(
+                    upload_asset, data, f"soylab-{uuid4().hex}.wav", "audio/wav", key))
+            audios = uploaded_audios
         videos = []
         for video in video_inputs:
             report("uploading")
