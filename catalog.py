@@ -51,6 +51,13 @@ MODELS = (
 BY_ID = {spec.model_id: spec for spec in MODELS}
 BY_SELECTION = {(spec.service, spec.family, spec.version): spec for spec in MODELS}
 
+
+def model_label(spec: ModelSpec) -> str:
+    return f"{spec.service} / {spec.family} {spec.version}"
+
+
+BY_LABEL = {model_label(spec): spec for spec in MODELS}
+
 # The per-model OpenAPI documents advertise these under
 # x-comfy-router-alt-providers. An empty entry means Comfy is the only route.
 ALT_PROVIDERS = {

@@ -3,7 +3,8 @@ import pathlib
 import unittest
 from unittest.mock import patch
 
-from soylab_comfy_router.catalog import BY_ID, MODELS, find_model
+from soylab_comfy_router import SoylabComfyRouter, _selection
+from soylab_comfy_router.catalog import ALT_PROVIDERS, BY_ID, BY_LABEL, MODELS, find_model
 from soylab_comfy_router.payload import build_payload
 from soylab_comfy_router.result import media_reference
 from soylab_comfy_router.router import run_model
@@ -13,11 +14,39 @@ class CatalogTests(unittest.TestCase):
     def test_ids_and_selections_are_unique(self):
         self.assertEqual(len(MODELS), len({item.model_id for item in MODELS}))
         self.assertEqual(len(MODELS), len({(item.service, item.family, item.version) for item in MODELS}))
+        self.assertEqual(len(MODELS), len(BY_LABEL))
+
+    def test_combined_model_has_provider_below_it(self):
+        schema = SoylabComfyRouter.define_schema()
+        model = schema.inputs[1]
+        self.assertEqual(model.id, "model")
+        self.assertEqual(model.options[0].key, "Runway / Gen-4 Turbo Video")
+        provider = model.options[0].inputs[0]
+        self.assertEqual(provider.display_name, "Router 실행 공급자")
+        self.assertEqual(provider.options, ["Comfy"])
+        spec, values = _selection({"model": model.options[0].key, "execution_provider": "Comfy"})
+        self.assertEqual(spec.model_id, "runway/gen4_turbo")
+        self.assertEqual(values["execution_provider"], "Comfy")
 
     def test_reference_limit_is_enforced(self):
         spec = BY_ID["byteplus/dreamina-seedance-2-5-260628"]
         with self.assertRaisesRegex(ValueError, "최대 30"):
             build_payload(spec, {"prompt": "test"}, ["data:image/png;base64,AQ=="] * 31, [], [])
+
+    def test_committed_price_references_have_sources_and_supported_routes(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        data = json.loads((root / "web/pricing.json").read_text(encoding="utf-8"))
+        self.assertEqual(data["currency"], "USD")
+        for model_id, providers in data["models"].items():
+            self.assertIn(model_id, BY_ID)
+            for name, entry in providers.items():
+                self.assertIn(name, ALT_PROVIDERS.get(model_id, ()))
+                self.assertTrue(entry["source"].startswith("https://"))
+                self.assertLessEqual(entry["checked_at"], data["updated_at"])
+                self.assertIs(entry["reference_inputs"], False)
+                rates = entry.get("rates") or entry.get("range")
+                self.assertTrue(rates)
+                self.assertTrue(all(float(rate) > 0 for rate in (rates.values() if isinstance(rates, dict) else rates)))
 
 
 class PayloadTests(unittest.TestCase):
@@ -80,7 +109,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual([nodes[n]["type"] for n in (1, 2, 3)], ["LoadImage", "SoylabComfyRouter", "SaveImage"])
         self.assertEqual(len([node for node in nodes.values() if node["type"] == "MarkdownNote"]), 2)
         self.assertEqual(nodes[2]["widgets_values_named"]["api_key"], "")
-        self.assertEqual(nodes[2]["widgets_values_named"]["service.model.version"], "2")
+        self.assertEqual(nodes[2]["widgets_values_named"]["model"], "OpenAI / GPT Image 2")
         self.assertEqual(len(workflow["links"]), 2)
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[4]["widgets_values"][0])
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[5]["widgets_values"][0])

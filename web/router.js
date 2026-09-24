@@ -4,34 +4,108 @@ import { api } from "../../scripts/api.js";
 const NODE_ID = "SoylabComfyRouter";
 const TITLE = "SOYLAB Comfy Router";
 const CORAL = "#FF705B";
+const HEADER_PURPLE = "#2E104B";
+const HEADER_GRADIENT = `linear-gradient(90deg, ${HEADER_PURPLE} 0%, #3D6574 50%, #00ED08 100%)`;
+const BODY_BG = "#1E1B25";
+const FOOTER_BG = "#28173E";
+const COST_BUTTON_BG = "#422670";
+const PRICE_HISTORY_KEY = "soylab.router.priceHistory.v1";
 const logo = new Image();
-logo.src = new URL("./soylab-logo.png", import.meta.url).href;
+const logoUrl = new URL("./soylab-logo.png", import.meta.url);
+logoUrl.searchParams.set("v", "64px");
+logo.src = logoUrl.href;
 logo.onload = () => app.graph?.setDirtyCanvas?.(true, true);
 
 let catalog = [];
+let pricing = { models: {} };
+let priceHistory = [];
+try {
+  const saved = JSON.parse(localStorage.getItem(PRICE_HISTORY_KEY) || "[]");
+  if (Array.isArray(saved)) priceHistory = saved;
+} catch (_) {}
+
+function priceSignature(node, spec, route) {
+  return JSON.stringify([
+    spec.model_id, route,
+    field(node, "resolution", ""), field(node, "ratio", ""), field(node, "duration", ""),
+    field(node, "quality", ""), field(node, "generate_audio", ""),
+    refCount(node, "images"), refCount(node, "videos"), refCount(node, "audios"),
+  ]);
+}
+
+function observedCost(node, spec, route) {
+  if (!spec) return null;
+  return priceHistory.find((entry) => entry.signature === priceSignature(node, spec, route)) || null;
+}
+
+function rememberCost(node, spec, route, credits) {
+  if (!spec || !Number.isFinite(Number(credits))) return;
+  const signature = priceSignature(node, spec, route);
+  priceHistory = [{ signature, credits: Number(credits), at: Date.now() },
+    ...priceHistory.filter((entry) => entry.signature !== signature)].slice(0, 40);
+  try { localStorage.setItem(PRICE_HISTORY_KEY, JSON.stringify(priceHistory)); } catch (_) {}
+}
+
+function directReference(node, spec, route) {
+  const entry = pricing.models?.[spec?.model_id]?.[route];
+  if (!entry || refCount(node, "images") || refCount(node, "videos") || refCount(node, "audios") || entry.reference_inputs !== false) return null;
+  const duration = Number(field(node, "duration", 0));
+  const resolution = String(field(node, "resolution", ""));
+  const ratio = String(field(node, "ratio", ""));
+  if (!Number.isFinite(duration) || duration <= 0 || (entry.aspect_ratio && entry.aspect_ratio !== ratio)) return null;
+  const range = entry.range || (Number.isFinite(entry.rates?.[resolution]) ? [entry.rates[resolution], entry.rates[resolution]] : null);
+  if (!range) return null;
+  const rateDollars = (value) => `$${Number(value.toFixed(4))}`;
+  const totalDollars = (value) => `$${value.toFixed(2)}`;
+  const rateText = range[0] === range[1] ? rateDollars(range[0]) : `${rateDollars(range[0])}–${rateDollars(range[1])}`;
+  const totalText = range[0] === range[1] ? totalDollars(range[0] * duration) : `${totalDollars(range[0] * duration)}–${totalDollars(range[1] * duration)}`;
+  return { rateText, totalText, source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
+}
+
 fetch(new URL("./catalog.json", import.meta.url))
   .then((response) => response.ok ? response.json() : [])
-  .then((items) => { catalog = items; app.graph?.setDirtyCanvas?.(true, true); })
+  .then((items) => {
+    catalog = items;
+    app.graph?.setDirtyCanvas?.(true, true);
+    for (const node of app.graph?._nodes || []) if (node.type === NODE_ID) queueVueSync(node.id);
+  })
+  .catch(() => {});
+fetch(new URL("./pricing.json", import.meta.url), { cache: "no-store" })
+  .then((response) => response.ok ? response.json() : { models: {} })
+  .then((data) => {
+    pricing = data;
+    for (const node of app.graph?._nodes || []) if (node.type === NODE_ID) queueVueSync(node.id);
+  })
   .catch(() => {});
 
 function widget(node, name) {
   return node.widgets?.find((item) => item.name === name) ?? null;
 }
 
+function modelLabel(spec) {
+  return `${spec.service} / ${spec.family} ${spec.version}`;
+}
+
+function inputPrefix(node) {
+  return widget(node, "model")?.value?.includes(" / ") ? "model" : "service.model.version";
+}
+
 function selected(node) {
-  const service = widget(node, "service")?.value;
-  const family = widget(node, "service.model")?.value;
-  const version = widget(node, "service.model.version")?.value;
-  const spec = catalog.find((item) => item.service === service && item.family === family && item.version === version);
-  return { service, family, version, spec };
+  const label = widget(node, "model")?.value;
+  const spec = inputPrefix(node) === "model"
+    ? catalog.find((item) => modelLabel(item) === label)
+    : catalog.find((item) => item.service === widget(node, "service")?.value
+      && item.family === widget(node, "service.model")?.value
+      && item.version === widget(node, "service.model.version")?.value);
+  return { spec };
 }
 
 function field(node, name, fallback = undefined) {
-  return widget(node, `service.model.version.${name}`)?.value ?? fallback;
+  return widget(node, `${inputPrefix(node)}.${name}`)?.value ?? fallback;
 }
 
 function refCount(node, type) {
-  return node.inputs?.filter((input) => input.name?.startsWith(`service.model.version.reference_${type}.`) && input.link != null).length ?? 0;
+  return node.inputs?.filter((input) => input.name?.startsWith(`${inputPrefix(node)}.reference_${type}.`) && input.link != null).length ?? 0;
 }
 
 function usd(value) {
@@ -82,7 +156,7 @@ function comfyQuote(node, spec) {
 }
 
 function estimate(node, spec) {
-  if (!spec) return { provider: "서비스: 확인 불가", comfy: "Comfy: 확인 불가" };
+  if (!spec) return { provider: "", comfy: "모델을 선택하세요" };
   const duration = Number(field(node, "duration", 5));
   const resolution = String(field(node, "resolution", ""));
   const quality = String(field(node, "quality", "low"));
@@ -128,12 +202,18 @@ function estimate(node, spec) {
     comfyRange = quote ? [quote.total / 211, (quote.maxTotal ?? quote.total) / 211] : null;
   }
   const actual = node.properties?.soylabActualCredits;
-  const providerText = `서비스 ${direct === null ? "확인 불가" : typeof direct === "string" ? direct : usd(direct)}`;
+  const providerText = direct === null ? "" : `${spec.service} 직결 ${typeof direct === "string" ? direct : usd(direct)}`;
   let comfyText = "Comfy 예상 확인 불가";
-  if (actual != null && Number.isFinite(Number(actual)) && node.properties?.soylabActualModel === id && node.properties?.soylabActualProvider === execution) {
+  const observed = observedCost(node, spec, execution);
+  const directRef = execution === "Comfy" ? null : directReference(node, spec, execution);
+  if (actual != null && Number.isFinite(Number(actual)) && node.properties?.soylabActualSignature === priceSignature(node, spec, execution)) {
     comfyText = `Comfy 실제 ${Number(actual).toFixed(2)} C`;
+  } else if (execution !== "Comfy" && observed) {
+    comfyText = `${execution} 최근 실측 ${observed.credits.toFixed(1)} C`;
   } else if (execution !== "Comfy") {
-    comfyText = `Comfy ${execution} 경로: 실행 후 확인`;
+    comfyText = directRef
+      ? `${execution} 직결 참고 ${directRef.rateText}/초`
+      : `${execution} Router 사전 단가 미공개`;
   } else if (comfyUsd !== null && Number.isFinite(comfyUsd)) {
     comfyText = `Comfy 약 ${(comfyUsd * 211).toFixed(1)} C`;
   } else if (comfyRange) {
@@ -166,10 +246,12 @@ function refreshPricePopup() {
   const route = String(field(node, "execution_provider", "Comfy"));
   const quote = comfyQuote(node, spec);
   const estimateInfo = estimate(node, spec);
+  const observed = observedCost(node, spec, route);
+  const directRef = directReference(node, spec, route);
   const duration = Number(field(node, "duration", 5));
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", ""));
-  const signature = JSON.stringify([spec?.model_id, route, duration, resolution, ratio, refCount(node, "videos"), node.properties?.soylabActualCredits]);
+  const signature = JSON.stringify([spec?.model_id, route, duration, resolution, ratio, refCount(node, "videos"), node.properties?.soylabActualCredits, directRef?.rateText]);
   if (pricePopup.dataset.signature === signature) return;
   pricePopup.dataset.signature = signature;
   pricePopup.replaceChildren();
@@ -180,7 +262,7 @@ function refreshPricePopup() {
     element.textContent = value;
     return element;
   };
-  const heading = line("div", "soylab-price-heading", "공급자별 비용 확인");
+  const heading = line("div", "soylab-price-heading", "Router 실행 공급자별 비용");
   const close = line("button", "soylab-price-close", "×");
   close.type = "button";
   close.setAttribute("aria-label", "비용 창 닫기");
@@ -189,23 +271,30 @@ function refreshPricePopup() {
   top.append(heading, close);
   pricePopup.append(top);
   if (!spec) {
-    pricePopup.append(line("p", "soylab-price-note", "서비스와 모델 버전을 먼저 선택하세요."));
+    pricePopup.append(line("p", "soylab-price-note", "모델을 먼저 선택하세요."));
     return;
   }
-  pricePopup.append(line("div", "soylab-price-model", `${spec.service} · ${spec.family} ${spec.version}`));
+  pricePopup.append(line("div", "soylab-price-model", modelLabel(spec)));
   const settings = [resolution, spec.output === "VIDEO" ? `${duration}초` : "", ratio].filter(Boolean).join(" · ");
   if (settings) pricePopup.append(line("div", "soylab-price-settings", settings));
-  const selectedRate = route === "Comfy" && quote
+  const selectedRate = route !== "Comfy" && observed
+    ? `최근 같은 설정 ${priceText(observed.credits)}`
+    : route !== "Comfy" && directRef
+      ? `직결 참고 ${directRef.totalText} · Router 요금 미공개`
+    : route === "Comfy" && quote
     ? `${priceText(quote.perSecond)}/초`
     : route === "Comfy" && Number.isFinite(estimateInfo.estimatedCredits)
       ? `약 ${priceText(estimateInfo.estimatedCredits)}/회`
-      : "공개된 단가 없음";
+      : "실행 전 가격 미공개";
   pricePopup.append(line("div", "soylab-price-selected", `현재 경로: ${route} · ${selectedRate}`));
+  if (route !== "Comfy" && quote) {
+    pricePopup.append(line("div", "soylab-price-baseline", `Comfy 기본 경로 참고: 약 ${priceText(quote.total)}${quote.maxTotal == null ? "" : `–${priceText(quote.maxTotal)}`}`));
+  }
 
   const table = document.createElement("table");
   const head = document.createElement("thead");
   const headRow = document.createElement("tr");
-  for (const label of ["공급자", "단가", "예상 총액"]) headRow.append(line("th", "", label));
+  for (const label of ["Router 공급자", "공개 참고 가격", "Router 비용/실측"]) headRow.append(line("th", "", label));
   head.append(headRow);
   table.append(head);
   const body = document.createElement("tbody");
@@ -214,20 +303,40 @@ function refreshPricePopup() {
     if (provider === route) row.className = "soylab-price-current";
     const known = provider === "Comfy" && quote;
     const estimated = provider === "Comfy" && Number.isFinite(estimateInfo.estimatedCredits);
-    const rate = known ? `${priceText(quote.perSecond)}/초` : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}/회` : "공개 정보 없음";
+    const recent = observedCost(node, spec, provider);
+    const outside = directReference(node, spec, provider);
+    const rate = known ? `Comfy ${priceText(quote.perSecond)}/초` : estimated ? `Comfy 약 ${priceText(estimateInfo.estimatedCredits)}/회` : outside ? `직결 ${outside.rateText}/초 · ${outside.totalText} 참고` : "공개 참고 없음";
     const total = known
       ? quote.maxTotal == null ? `약 ${priceText(quote.total)}` : `약 ${priceText(quote.total)}–${priceText(quote.maxTotal)}`
-      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : "실행 후 확인";
-    for (const cell of [provider, rate, total]) row.append(line("td", "", cell));
+      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : "사전 요금 미공개";
+    row.append(line("td", "", provider));
+    const rateCell = line("td", "", rate);
+    if (outside?.source) {
+      const link = document.createElement("a");
+      link.href = outside.source;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = " ↗";
+      link.title = `업체 직접 API 가격 출처 · 확인일 ${outside.checkedAt}`;
+      rateCell.append(link);
+    }
+    row.append(rateCell, line("td", "", total));
     body.append(row);
   }
   table.append(body);
   pricePopup.append(table);
   const actual = node.properties?.soylabActualCredits;
-  if (actual != null && node.properties?.soylabActualModel === spec.model_id && node.properties?.soylabActualProvider === route) {
+  if (actual != null && node.properties?.soylabActualSignature === priceSignature(node, spec, route)) {
     pricePopup.append(line("div", "soylab-price-actual", `최근 실행 실제 사용량: ${priceText(Number(actual))}`));
   }
-  pricePopup.append(line("p", "soylab-price-note", "Comfy 기본 경로의 예상치는 공식 Partner 노드 계산식을 따른 참고값입니다. Router 모델 목록과 Comfy 모델 소개 페이지에는 공급자별 요금표가 없어 다른 경로는 실행 후 실제 사용량을 확인합니다."));
+  pricePopup.append(line("p", "soylab-price-note", `직결 USD 참고 가격은 각 업체 API 페이지를 ${pricing.updated_at || "최근"}에 확인해 Git에 기록한 값으로, Router의 Comfy 크레딧 청구액이 아닙니다. Comfy 기준은 공식 Partner Node 가격표의 참고값입니다. Router는 다른 공급자의 사전 요금을 공개하지 않습니다. 최근 실측은 이 브라우저의 이전 실행 기록이며 입력 내용에 따라 달라질 수 있습니다.`));
+  if (directRef?.note) pricePopup.append(line("p", "soylab-price-note", `${route} 참고 가격은 제공 페이지 내부의 표기 차이가 있어 범위로 표시합니다.`));
+  const pricingLink = document.createElement("a");
+  pricingLink.href = "https://docs.comfy.org/tutorials/partner-nodes/pricing";
+  pricingLink.target = "_blank";
+  pricingLink.rel = "noopener noreferrer";
+  pricingLink.textContent = "Comfy 공식 가격표 ↗";
+  pricePopup.append(pricingLink, document.createTextNode("  ·  "));
   const source = document.createElement("a");
   source.href = "https://docs.comfy.org/development/comfy-router/reference";
   source.target = "_blank";
@@ -269,21 +378,38 @@ function syncVueNode(id) {
   const host = [...document.querySelectorAll("[data-node-id]")].find((element) => element.dataset.nodeId === id);
   const header = host?.querySelector(".lg-node-header");
   if (!header) return;
-  host.classList.add("soylab-router-vue");
+  if (!host.classList.contains("soylab-router-vue")) host.classList.add("soylab-router-vue");
+  header.style.setProperty("background", HEADER_GRADIENT, "important");
+  header.style.setProperty("color", "#fff", "important");
+  host.querySelector(".bg-component-node-background")?.style.setProperty("background-color", BODY_BG, "important");
+  host.querySelector('[data-testid="advanced-inputs-button"]')?.style.setProperty("background-color", FOOTER_BG, "important");
+  const costButton = [...host.querySelectorAll("button")].find((button) => button.textContent.trim() === "Router 공급자별 비용 확인");
+  costButton?.classList.add("soylab-cost-button");
 
   const title = header.querySelector('[data-testid="node-title"]');
-  if (title && !title.querySelector(".soylab-header-logo")) {
-    const mark = document.createElement("img");
-    mark.className = "soylab-header-logo";
-    mark.src = logo.src;
-    mark.alt = "";
-    title.prepend(mark);
+  if (title) {
+    title.style.setProperty("color", "#fff", "important");
+    title.style.setProperty("gap", "2px", "important");
+    let mark = title.querySelector(".soylab-header-logo");
+    if (mark && mark.tagName !== "SPAN") {
+      mark.remove();
+      mark = null;
+    }
+    if (!mark) {
+      mark = document.createElement("span");
+      mark.className = "soylab-header-logo";
+      mark.setAttribute("aria-hidden", "true");
+      title.prepend(mark);
+    }
+    // A background on a span cannot be dragged into ComfyUI as an image file.
+    mark.style.cssText = "display:inline-block!important;width:22px!important;height:22px!important;min-width:22px!important;max-width:22px!important;min-height:22px!important;max-height:22px!important;flex:0 0 22px!important;background-color:transparent!important;background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;pointer-events:none!important;user-select:none!important";
+    mark.style.setProperty("background-image", `url("${logo.src}")`, "important");
   }
   let badge = header.querySelector(".soylab-price-badge");
   if (!badge) {
     badge = document.createElement("span");
     badge.className = "soylab-price-badge";
-    badge.title = "공급자별 비용 비교 열기";
+    badge.title = "Router 실행 공급자별 비용 비교 열기";
     badge.setAttribute("role", "button");
     badge.tabIndex = 0;
     badge.onclick = (event) => { event.stopPropagation(); openPricePopup(node); };
@@ -294,7 +420,7 @@ function syncVueNode(id) {
   }
   const { spec } = selected(node);
   const price = estimate(node, spec);
-  const label = `${price.provider}  |  ${price.comfy}`;
+  const label = [price.provider, price.comfy].filter(Boolean).join("  |  ");
   if (badge.textContent !== label) badge.textContent = label;
 
   const providerRow = host.querySelector('[aria-label="execution_provider"]')?.closest(".lg-node-widget");
@@ -307,10 +433,20 @@ function syncVueNode(id) {
     }
     const route = String(field(node, "execution_provider", "Comfy"));
     const quote = comfyQuote(node, spec);
+    const observed = observedCost(node, spec, route);
+    const directRef = directReference(node, spec, route);
     const rate = route === "Comfy" && quote
-      ? `Comfy 예상 ${priceText(quote.perSecond)}/초 · 공급자별 비교는 ‘비용 확인’`
-      : `${route} 경로의 Comfy 단가는 공개되지 않았습니다 · 실행 후 실제 크레딧 확인`;
-    if (hint.textContent !== rate) hint.textContent = rate;
+      ? `Comfy 예상 ${priceText(quote.perSecond)}/초 · 자세한 비용은 위 가격 버튼`
+      : route !== "Comfy" && observed
+        ? `${route} 최근 같은 설정 ${priceText(observed.credits)} · 사전 단가는 미공개`
+        : route !== "Comfy" && directRef
+          ? `${route} 직결 참고 ${directRef.rateText}/초 · Router 청구액은 별도`
+        : route !== "Comfy" && quote
+          ? `${route} 사전 단가 미공개 · Comfy 기준 약 ${priceText(quote.total)} (선택 경로 요금 아님)`
+          : `${route} 사전 단가 미공개 · 공식 가격표 링크는 비용 창에서 확인`;
+    const soleRoute = route === "Comfy" && !spec?.alternates?.length;
+    const message = soleRoute ? `${rate} · Router 내 공급자는 Comfy만 지원` : rate;
+    if (hint.textContent !== message) hint.textContent = message;
   }
 
   const kinds = ["IMAGE", "VIDEO", "AUDIO"];
@@ -319,10 +455,10 @@ function syncVueNode(id) {
     const slot = slots[index];
     const text = slot?.querySelector("span.truncate");
     if (!text) return;
-    if (!text.dataset.soylabLabel) text.dataset.soylabLabel = text.textContent;
+    if (!text.dataset.soylabLabel) text.dataset.soylabLabel = text.textContent.trim() || kind;
     const supported = spec?.output === kind;
     slot.classList.toggle("soylab-unsupported-output", !supported);
-    const wanted = supported ? text.dataset.soylabLabel : "Not Support";
+    const wanted = supported ? text.dataset.soylabLabel : "";
     if (text.textContent !== wanted) text.textContent = wanted;
   });
   for (const combo of host.querySelectorAll('[role="combobox"]')) {
@@ -337,23 +473,28 @@ function installVueHeaderSupport() {
   style.id = "soylab-router-vue-style";
   style.textContent = `
     .soylab-router-vue .lg-node-header {
-      background: linear-gradient(90deg, #542080 0%, #3D6574 50%, #00ED08 100%) !important;
+      background: ${HEADER_GRADIENT} !important;
       color: #fff !important;
       min-height: 34px;
     }
+    .soylab-router-vue .bg-component-node-background { background-color: ${BODY_BG} !important; }
+    .soylab-router-vue [data-testid="advanced-inputs-button"] { background-color: ${FOOTER_BG} !important; }
+    .soylab-router-vue .soylab-cost-button { background-color: ${COST_BUTTON_BG} !important; color: #fff !important; }
+    .soylab-router-vue .soylab-cost-button:hover { background-color: #523084 !important; }
     .soylab-router-vue .lg-node-header [data-testid="node-title"],
     .soylab-router-vue .lg-node-header [data-testid="node-title"] span,
     .soylab-router-vue .lg-node-header .text-node-component-header-icon {
       color: #fff !important;
     }
-    .soylab-router-vue .lg-node-header [data-testid="node-title"] { min-width: 0; font-weight: 700; }
+    .soylab-router-vue .lg-node-header [data-testid="node-title"] { min-width: 0; font-weight: 700; gap: 2px !important; }
     .soylab-router-vue .soylab-header-logo {
-      width: 22px; height: 22px; flex: none; object-fit: cover;
-      border-radius: 3px; background: #fff;
+      width: 22px; height: 22px; flex: none; background-color: transparent;
+      background-size: contain; background-position: center; background-repeat: no-repeat;
+      pointer-events: none; user-select: none;
     }
     .soylab-router-vue .soylab-price-badge {
       flex: none; max-width: 52%; overflow: hidden; text-overflow: ellipsis;
-      white-space: nowrap; padding: 5px 8px; border-radius: 6px;
+      white-space: nowrap; padding: 5px 8px; border-radius: 12px;
       color: #fff; background: rgba(20, 8, 40, .85); font-size: 10px; cursor: pointer;
     }
     .soylab-router-vue .soylab-price-badge:hover { background: rgba(20, 8, 40, .98); }
@@ -361,11 +502,8 @@ function installVueHeaderSupport() {
       grid-column: 1 / -1; margin: -2px 12px 4px; color: #dcc5f2;
       font-size: 10px; line-height: 1.35;
     }
-    .soylab-router-vue .soylab-unsupported-output span.truncate,
     .soylab-router-vue .soylab-unsupported-value { color: ${CORAL} !important; }
-    .soylab-router-vue .soylab-unsupported-output .slot-dot {
-      background-color: ${CORAL} !important; border-color: ${CORAL} !important;
-    }
+    .soylab-router-vue .soylab-unsupported-output { display: none !important; }
     .soylab-price-popup {
       position: fixed; z-index: 100000; top: 72px; right: 24px;
       width: min(410px, calc(100vw - 32px)); max-height: calc(100vh - 96px);
@@ -383,6 +521,7 @@ function installVueHeaderSupport() {
       margin: 12px 0; padding: 8px 10px; border-radius: 7px;
       background: #462474; font-weight: 700;
     }
+    .soylab-price-popup .soylab-price-baseline { margin: -5px 0 9px; color: #d9c3ec; }
     .soylab-price-popup table { width: 100%; border-collapse: collapse; }
     .soylab-price-popup th, .soylab-price-popup td { padding: 7px 5px; border-bottom: 1px solid #604574; text-align: left; }
     .soylab-price-popup th { color: #c9b4da; font-weight: 600; }
@@ -407,7 +546,7 @@ function installVueHeaderSupport() {
       for (const added of mutation.addedNodes) enqueueFromElement(added, true);
     }
   });
-  observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+  observer.observe(document.body, { childList: true, characterData: true, attributes: true, attributeFilter: ["class"], subtree: true });
   document.addEventListener("input", (event) => enqueueFromElement(event.target), true);
   document.addEventListener("change", (event) => enqueueFromElement(event.target), true);
   for (const existing of document.querySelectorAll("[data-node-id]")) queueVueSync(existing.dataset.nodeId);
@@ -423,7 +562,7 @@ function drawHeader(node, ctx) {
   const y = -titleHeight;
   ctx.save();
   const gradient = ctx.createLinearGradient(0, 0, width, 0);
-  gradient.addColorStop(0, "#542080");
+  gradient.addColorStop(0, HEADER_PURPLE);
   gradient.addColorStop(.50, "#3D6574");
   gradient.addColorStop(1, "#00ED08");
   ctx.fillStyle = gradient;
@@ -443,15 +582,15 @@ function drawHeader(node, ctx) {
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "bold 14px Inter, Arial, sans-serif";
   ctx.textBaseline = "middle";
-  ctx.fillText(TITLE, 36, y + titleHeight / 2, 240);
+  ctx.fillText(TITLE, 32, y + titleHeight / 2, 240);
   const { spec } = selected(node);
   const price = estimate(node, spec);
-  const label = `${price.provider}  |  ${price.comfy}`;
+  const label = [price.provider, price.comfy].filter(Boolean).join("  |  ");
   ctx.font = "10px Inter, Arial, sans-serif";
   const textWidth = Math.min(ctx.measureText(label).width + 16, Math.max(width - 260, 80));
   ctx.fillStyle = "rgba(20, 8, 40, .82)";
   ctx.beginPath();
-  ctx.roundRect?.(width - textWidth - 7, y + 5, textWidth, titleHeight - 10, 6);
+  ctx.roundRect?.(width - textWidth - 7, y + 5, textWidth, titleHeight - 10, 12);
   if (!ctx.roundRect) ctx.rect(width - textWidth - 7, y + 5, textWidth, titleHeight - 10);
   ctx.fill();
   ctx.fillStyle = "#FFFFFF";
@@ -467,8 +606,8 @@ function updateOutputLabels(node) {
   ["IMAGE", "VIDEO", "AUDIO"].forEach((kind, index) => {
     const output = node.outputs[index];
     if (!output) return;
-    const name = spec?.output === kind ? kind : "Not Support";
-    const color = spec?.output === kind ? "#BB7BFF" : CORAL;
+    const name = spec?.output === kind ? kind : "";
+    const color = spec?.output === kind ? "#BB7BFF" : BODY_BG;
     if (output.name !== name || output.color !== color) changed = true;
     output.name = name;
     output.color = color;
@@ -485,54 +624,23 @@ function markUnsupported(node) {
 }
 
 function installSelectionWatch(node) {
-  const serviceWidget = widget(node, "service");
-  if (!serviceWidget || serviceWidget._soylabWatch) return;
-  serviceWidget._soylabWatch = true;
-  const original = serviceWidget.callback;
-  serviceWidget.callback = function (...args) {
-    const previous = selected(node);
-    const result = original?.apply(this, args);
-    setTimeout(() => {
-      const current = selected(node);
-      const modelWidget = widget(node, "service.model");
-      if (modelWidget && previous.family && previous.family !== "Not Support" && current.service !== previous.service) {
-        const stillSupported = catalog.some((item) => item.service === current.service && item.family === previous.family);
-        modelWidget.value = stillSupported ? previous.family : "Not Support";
-        modelWidget.callback?.(modelWidget.value);
-      }
-      updateOutputLabels(node);
-      markUnsupported(node);
-      queueVueSync(node.id);
-    }, 0);
-    return result;
-  };
-  const watchModel = () => {
-    const modelWidget = widget(node, "service.model");
-    if (!modelWidget || modelWidget._soylabWatch) return;
-    modelWidget._soylabWatch = true;
-    const old = modelWidget.callback;
-    modelWidget.callback = function (...args) {
-      const previous = selected(node);
-      const result = old?.apply(this, args);
+  for (const name of ["model", "service", "service.model", "service.model.version"]) {
+    const control = widget(node, name);
+    if (!control || control._soylabWatch) continue;
+    control._soylabWatch = true;
+    const original = control.callback;
+    control.callback = function (...args) {
+      const result = original?.apply(this, args);
       setTimeout(() => {
-        const current = selected(node);
-        const versionWidget = widget(node, "service.model.version");
-        if (versionWidget && previous.version && current.family !== previous.family) {
-          const supported = catalog.some((item) => item.service === current.service && item.family === current.family && item.version === previous.version);
-          versionWidget.value = supported ? previous.version : "Not Support";
-          versionWidget.callback?.(versionWidget.value);
-        }
         updateOutputLabels(node);
         markUnsupported(node);
         queueVueSync(node.id);
       }, 0);
       return result;
     };
-  };
-  watchModel();
+  }
   const previousDraw = node.onDrawForeground;
   node.onDrawForeground = function (ctx, ...args) {
-    watchModel();
     previousDraw?.call(this, ctx, ...args);
     updateOutputLabels(this);
     markUnsupported(this);
@@ -569,8 +677,22 @@ function addKeyHelp(node) {
 
 function addPriceButton(node) {
   if (node.widgets?.some((item) => item._soylabPriceButton)) return;
-  const button = node.addWidget("button", "공급자별 비용 확인", null, () => openPricePopup(node));
+  const button = node.addWidget("button", "Router 공급자별 비용 확인", null, () => openPricePopup(node));
   button._soylabPriceButton = true;
+  button.draw = (ctx, _node, width, y, height) => {
+    ctx.save();
+    ctx.fillStyle = COST_BUTTON_BG;
+    ctx.beginPath();
+    ctx.roundRect?.(14, y, width - 28, height, 8);
+    if (!ctx.roundRect) ctx.rect(14, y, width - 28, height);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.font = "12px Inter, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(button.name, width / 2, y + height / 2);
+    ctx.restore();
+  };
   button.serialize = false;
   const oldIndex = node.widgets.indexOf(button);
   const helpIndex = node.widgets.findIndex((item) => item.name === "soylab_key_help");
@@ -587,8 +709,8 @@ app.registerExtension({
     const created = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function (...args) {
       const result = created?.apply(this, args);
-      this.color = "#6A25B3";
-      this.bgcolor = "#221232";
+      this.color = HEADER_PURPLE;
+      this.bgcolor = BODY_BG;
       this.title = TITLE;
       addKeyHelp(this);
       addPriceButton(this);
@@ -609,6 +731,11 @@ api.addEventListener("executed", (event) => {
   node.properties.soylabActualCredits = cost.credits;
   node.properties.soylabActualModel = cost.model_id;
   node.properties.soylabActualProvider = cost.provider;
+  const { spec } = selected(node);
+  if (spec?.model_id === cost.model_id && field(node, "execution_provider", "Comfy") === cost.provider) {
+    node.properties.soylabActualSignature = priceSignature(node, spec, cost.provider);
+    rememberCost(node, spec, cost.provider, cost.credits);
+  }
   node.setDirtyCanvas?.(true, true);
   queueVueSync(node.id);
 });

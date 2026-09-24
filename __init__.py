@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from comfy_api.latest import IO, ComfyExtension
 
-from .catalog import ALT_PROVIDERS, MODELS, families, find_model, services, versions
+from .catalog import ALT_PROVIDERS, BY_LABEL, MODELS, model_label
 from .media import audio_from_bytes, audio_wav_bytes, image_data_uri, image_from_bytes, video_bytes, video_from_bytes
 from .payload import build_payload
 from .result import media_reference
@@ -53,10 +53,10 @@ def _media_inputs(spec):
     return inputs
 
 
-def _version_inputs(spec):
-    inputs = [IO.String.Input("prompt", default="", multiline=True, tooltip="생성 또는 편집 프롬프트")]
+def _model_inputs(spec):
     route_options = ["Comfy", *ALT_PROVIDERS.get(spec.model_id, ())]
-    inputs.append(IO.Combo.Input("execution_provider", options=route_options + ["Not Support"], default="Comfy", tooltip="실행 경로. 지원하지 않는 경로는 Not Support"))
+    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="Router 실행 공급자", default="Comfy", tooltip="Comfy Router 안에서 이 모델을 실행할 공급자입니다. 모델 제작사의 직접 API와는 별개입니다.")]
+    inputs.append(IO.String.Input("prompt", default="", multiline=True, tooltip="생성 또는 편집 프롬프트"))
     if spec.resolutions:
         inputs.append(IO.Combo.Input("resolution", options=list(spec.resolutions), default=spec.resolutions[0], tooltip="모델에서 지원하는 해상도 또는 크기"))
     if spec.ratios:
@@ -74,32 +74,18 @@ def _version_inputs(spec):
     return inputs
 
 
-def _service_input():
-    service_options = []
-    for service in services():
-        model_options = []
-        for family in families(service):
-            variant_options = []
-            for version in versions(service, family):
-                spec = find_model(service, family, version)
-                variant_options.append(IO.DynamicCombo.Option(version, _version_inputs(spec)))
-            variant_options.append(IO.DynamicCombo.Option("Not Support", []))
-            model_options.append(IO.DynamicCombo.Option(family, [IO.DynamicCombo.Input("version", options=variant_options, display_name="모델 버전")]))
-        model_options.append(IO.DynamicCombo.Option("Not Support", []))
-        service_options.append(IO.DynamicCombo.Option(service, [IO.DynamicCombo.Input("model", options=model_options, display_name="모델")]))
-    return IO.DynamicCombo.Input("service", options=service_options, display_name="서비스")
+def _model_input():
+    options = [IO.DynamicCombo.Option(model_label(spec), _model_inputs(spec)) for spec in MODELS]
+    return IO.DynamicCombo.Input("model", options=options, display_name="모델")
 
 
-def _selection(service_data: dict):
-    if not isinstance(service_data, dict):
-        raise ValueError("서비스를 선택하세요.")
-    service = service_data.get("service")
-    model_data = service_data.get("model") or {}
-    family = model_data.get("model")
-    version_data = model_data.get("version") or {}
-    version = version_data.get("version")
-    spec = find_model(service, family, version)
-    return spec, version_data
+def _selection(model_data: dict):
+    if not isinstance(model_data, dict):
+        raise ValueError("모델을 선택하세요.")
+    label = model_data.get("model")
+    if label not in BY_LABEL:
+        raise ValueError(f"Not Support: {label}")
+    return BY_LABEL[label], model_data
 
 
 def _ordered_values(group):
@@ -117,10 +103,10 @@ class SoylabComfyRouter(IO.ComfyNode):
             node_id="SoylabComfyRouter",
             display_name="SOYLAB Comfy Router",
             category="Soylab/Comfy Router",
-            description="Comfy Router 모델을 개인 API 키로 실행합니다. 서비스·모델·버전에 따라 입력이 바뀝니다.",
+            description="Comfy Router 모델을 개인 API 키로 실행합니다. 모델에 따라 입력이 바뀝니다.",
             inputs=[
                 IO.String.Input("api_key", default="", placeholder="개인 Comfy Router API 키", tooltip="비워두면 API KEY.INI에서 읽습니다. 노드에 입력한 키는 워크플로에 저장될 수 있습니다."),
-                _service_input(),
+                _model_input(),
                 IO.String.Input("advanced_json", default="", multiline=True, advanced=True, tooltip="선택한 모델의 추가 네이티브 JSON 파라미터. model 필드는 URL에서 지정됩니다."),
             ],
             outputs=[
@@ -134,11 +120,11 @@ class SoylabComfyRouter(IO.ComfyNode):
         )
 
     @classmethod
-    async def execute(cls, api_key: str, service: dict, advanced_json: str = "") -> IO.NodeOutput:
+    async def execute(cls, api_key: str, model: dict, advanced_json: str = "") -> IO.NodeOutput:
         key = _api_key(api_key)
         if not key:
             raise ValueError("개인 API 키를 입력하거나 API KEY.INI 파일에 저장하세요.")
-        spec, values = _selection(service)
+        spec, values = _selection(model)
         images = [image_data_uri(image) for image in _ordered_values(values.get("reference_images"))]
         audios = ["data:audio/wav;base64," + base64.b64encode(audio_wav_bytes(audio)).decode("ascii") for audio in _ordered_values(values.get("reference_audios"))]
         video_inputs = _ordered_values(values.get("reference_videos"))
