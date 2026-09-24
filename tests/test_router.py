@@ -20,13 +20,16 @@ class CatalogTests(unittest.TestCase):
         schema = SoylabComfyRouter.define_schema()
         model = schema.inputs[1]
         self.assertEqual(model.id, "model")
-        self.assertEqual(model.options[0].key, "Runway / Gen-4 Turbo Video")
+        self.assertEqual(model.options[0].key, "Dreamina / Seedance 2.5")
         provider = model.options[0].inputs[0]
         self.assertEqual(provider.display_name, "Router 실행 공급자")
-        self.assertEqual(provider.options, ["Comfy"])
-        spec, values = _selection({"model": model.options[0].key, "execution_provider": "Comfy"})
-        self.assertEqual(spec.model_id, "runway/gen4_turbo")
-        self.assertEqual(values["execution_provider"], "Comfy")
+        self.assertEqual(provider.options, ["Comfy", "fal", "higgsfield", "runware", "wavespeed"])
+        self.assertEqual(provider.default, "higgsfield")
+        spec, values = _selection({"model": model.options[0].key, "execution_provider": "higgsfield"})
+        self.assertEqual(spec.model_id, "byteplus/dreamina-seedance-2-5-260628")
+        self.assertEqual(values["execution_provider"], "higgsfield")
+        runway = next(option for option in model.options if option.key == "Runway / Gen-4 Turbo Video")
+        self.assertEqual(runway.inputs[0].default, "Comfy")
 
     def test_reference_limit_is_enforced(self):
         spec = BY_ID["byteplus/dreamina-seedance-2-5-260628"]

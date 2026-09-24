@@ -15,6 +15,10 @@ from .payload import build_payload
 from .result import media_reference
 from .router import RouterError, download_asset, run_model, upload_asset
 
+
+DEFAULT_MODEL_ID = "byteplus/dreamina-seedance-2-5-260628"
+DEFAULT_EXECUTION_PROVIDER = "higgsfield"
+
 WEB_DIRECTORY = "./web"
 ROOT = Path(__file__).resolve().parent
 
@@ -55,7 +59,8 @@ def _media_inputs(spec):
 
 def _model_inputs(spec):
     route_options = ["Comfy", *ALT_PROVIDERS.get(spec.model_id, ())]
-    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="Router 실행 공급자", default="Comfy", tooltip="Comfy Router 안에서 이 모델을 실행할 공급자입니다. 모델 제작사의 직접 API와는 별개입니다.")]
+    default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
+    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="Router 실행 공급자", default=default_provider, tooltip="Comfy Router 안에서 이 모델을 실행할 공급자입니다. 모델 제작사의 직접 API와는 별개입니다.")]
     inputs.append(IO.String.Input("prompt", default="", multiline=True, tooltip="생성 또는 편집 프롬프트"))
     if spec.resolutions:
         inputs.append(IO.Combo.Input("resolution", options=list(spec.resolutions), default=spec.resolutions[0], tooltip="모델에서 지원하는 해상도 또는 크기"))
@@ -75,7 +80,8 @@ def _model_inputs(spec):
 
 
 def _model_input():
-    options = [IO.DynamicCombo.Option(model_label(spec), _model_inputs(spec)) for spec in MODELS]
+    ordered_models = sorted(MODELS, key=lambda spec: spec.model_id != DEFAULT_MODEL_ID)
+    options = [IO.DynamicCombo.Option(model_label(spec), _model_inputs(spec)) for spec in ordered_models]
     return IO.DynamicCombo.Input("model", options=options, display_name="모델")
 
 

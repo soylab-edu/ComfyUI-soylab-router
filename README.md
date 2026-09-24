@@ -1,6 +1,6 @@
 # SOYLAB Comfy Router
 
-A local ComfyUI custom node that calls [Comfy Router](https://comfy.org/platform/router) with your personal Comfy API key. The purple node uses the supplied Soylab mark and purple-to-green header. A single `Model` control shows the maker and model together, such as `Runway / Gen-4 Turbo Video` or `Dreamina / Seedance 2.5`. The `Router execution provider` control appears below it. Reference sockets use native `Autogrow` with model-specific caps.
+A local ComfyUI custom node that calls [Comfy Router](https://comfy.org/platform/router) with your personal Comfy API key. The purple node uses the supplied Soylab mark and purple-to-green header. A single `Model` control shows the maker and model together, such as `Runway / Gen-4 Turbo Video` or `Dreamina / Seedance 2.5`. New nodes default to `Dreamina / Seedance 2.5` with the `higgsfield` Router execution provider. The provider control appears below the model. Reference sockets use native `Autogrow` with model-specific caps.
 
 This node sends REST requests with Python's standard library. The SDK installations in the Router quickstart (`comfy-sdk`, `@comfyorg/sdk`, or Swift SDK) are alternative examples for other applications and are not required here. The node currently waits for a synchronous Router response; queued delivery and automatic retries are not yet implemented.
 
