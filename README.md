@@ -2,6 +2,8 @@
 
 A local ComfyUI custom node that calls [Comfy Router](https://comfy.org/platform/router) with your personal Comfy API key. The purple node uses the supplied Soylab mark and purple-to-green header. Service, model family and version use ComfyUI's native `DynamicCombo`; reference sockets use native `Autogrow` with model-specific caps.
 
+This node sends REST requests with Python's standard library. The SDK installations in the Router quickstart (`comfy-sdk`, `@comfyorg/sdk`, or Swift SDK) are alternative examples for other applications and are not required here. The node currently waits for a synchronous Router response; queued delivery and automatic retries are not yet implemented.
+
 ## Install
 
 1. Put this repository in `ComfyUI/custom_nodes/soylab_comfy_router` and restart ComfyUI. A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required.
@@ -25,7 +27,9 @@ The maximum reference sockets are taken from the model's [Router schema](https:/
 
 ## Cost display
 
-The header shows a **direct service price** only where a public pricing rule was verified (currently Runway) and a **Comfy credit estimate** where the installed Partner node's published USD price formula can be mapped to these controls. Comfy's published conversion is **$1 = 211 credits**. Router's model catalog does not expose a complete price table through its model API, and an alternate execution provider may have a different charge. Unknown values are explicitly shown as unavailable. After a successful call, the header and `COST` output use `X-Comfy-Credits-Used` when Router supplies it; that is the actual charge. Estimates can become stale when prices change. Check the Developer Platform before an expensive run.
+The header shows a **direct service price** only where a public pricing rule was verified (currently Runway) and a **Comfy credit estimate** where the installed Partner node's published USD price formula can be mapped to these controls. Comfy's published conversion is **$1 = 211 credits**. For Seedance 2.5 and 2.0, the selected Comfy route also shows estimated credits per second. Click **공급자별 비용 확인** on the node or its header cost badge to open a comparison panel; it updates when the model, route, resolution, duration or ratio changes. Image models with a known Comfy estimate show credits per run.
+
+[Comfy's model gallery](https://comfy.org/models) and [Seedance 2.5 page](https://comfy.org/seedance-2.5) describe the models and Cloud plans but do not publish a Router provider price table. Router's model catalog also does not expose such a table through its API. The comparison panel therefore marks alternate provider prices as unavailable instead of applying their direct service prices to Comfy billing. After a successful call, the header, panel and `COST` output use `X-Comfy-Credits-Used` when Router supplies it; that is the actual charge. Estimates can become stale when prices change. Check the Developer Platform before an expensive run.
 
 The request uses the documented `POST /v2/models/{provider}/{model}` route. Optional alternate providers are shown only for canonical models whose published schema advertises them. `advanced_json` merges additional native request fields; it cannot override the model path. Video references that require an HTTPS URL are uploaded through Comfy's signed `/customers/storage` flow using the same API key.
 
@@ -46,8 +50,10 @@ The request uses the documented `POST /v2/models/{provider}/{model}` route. Opti
 
 ## Verify locally
 
+From this repository directory, use the Python environment that runs ComfyUI and include ComfyUI's source directory on `PYTHONPATH`:
+
 ```bash
-python -m unittest discover -s tests -v
+PYTHONPATH="..:/path/to/ComfyUI" python -m unittest discover -s tests -v
 ```
 
 For the official ComfyUI-Manager listing, see the [Comfy Registry publication check](REGISTRY.md). This local node has not been published to the Registry.
