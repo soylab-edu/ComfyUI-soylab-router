@@ -29,13 +29,13 @@
 | Google | Nano Banana 2、2 Lite、Pro | 图像 |
 | BytePlus Audio | Seed Audio 1.0、Multilingual | 音频 |
 
-Seedance 提供 `auto`、`text`、`image`、`reference` 任务模式；2.5 还提供官方合作伙伴节点中的 `edit` 和 `extend`。在 `image` 模式下，`image_1` 是首帧，`image_2` 是尾帧。原有的 `first_frame`、`last_frame` 输入仍可使用，但同一帧不要同时连接两个输入。在 `reference` 模式下，编号图像输入仍作为参考图像。`edit` 与 `extend` 需要视频。编辑时采用源视频的时长和宽高比。由于尚未验证其他服务商对此类请求的转换，`edit` 和 `extend` 仅允许使用 Comfy 路径。
+Seedance 提供 `auto`、`text`、`image`、`reference` 任务模式；2.5 还提供官方合作伙伴节点中的 `edit` 和 `extend`。在 `image` 模式下，或仅连接图像输入的 `auto` 模式下，`image_1` 是首帧，`image_2` 是尾帧。原有的 `first_frame`、`last_frame` 输入仍可使用，但同一帧不要同时连接两个输入。在 `reference` 模式下，编号图像输入仍作为参考图像。`edit` 与 `extend` 需要视频。编辑时采用源视频的时长和宽高比。由于尚未验证其他服务商对此类请求的转换，`edit` 和 `extend` 仅允许使用 Comfy 路径。
 
 Seedream 5 Pro 在连接参考图像后，可选择 `standard`（质量优先）或 `fast`（速度优先）提示词优化模式。Seed Audio 提供 `auto`、`text`、`audio`、`image`、`preset_voice` 参考模式；预设音色列表来自已安装的官方合作伙伴节点。节点会在付费请求前拦截与模式不匹配的输入。模型、服务商、模式与接口数量由 [`web/router-data.json`](web/router-data.json) 管理。
 
 Higgsfield 路径的 Seedance 图像转视频 API 要求可访问的图像 URL，因此节点会先上传图像到 Comfy 签名存储，再交给 Router。其他路径使用模型架构允许的数据 URI。[Router 的 Seedance 架构](https://docs.comfy.org/development/comfy-router/models/byteplus/dreamina-seedance-2-5-260628/code)区分首帧与参考图像。
 
-**如果要把照片固定为首帧，**请选择 `image` 任务模式，并把照片连接到 `image_1`。尾帧连接到 `image_2`。即使提示词写了“10 秒、1080p”，实际请求仍采用节点中的 `duration` 和 `resolution`。
+**如果要把照片固定为首帧，**请选择 `auto` 或 `image` 任务模式，并把照片连接到 `image_1`。尾帧连接到 `image_2`。即使提示词写了“10 秒、1080p”，实际请求仍采用节点中的 `duration` 和 `resolution`。
 
 ## 服务商与费用
 

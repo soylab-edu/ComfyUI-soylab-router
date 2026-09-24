@@ -25,7 +25,7 @@
       },
       "model_mode": {
         "name": "モード",
-        "tooltip": "image: image_1 は最初のフレーム、image_2 は最後のフレーム。reference: 番号付き画像は参照画像です。"
+        "tooltip": "image、または画像のみの auto: image_1 は最初のフレーム、image_2 は最後のフレーム。reference: 番号付き画像は参照画像です。"
       },
       "preset_voice": {
         "name": "プリセット音声",
@@ -69,19 +69,19 @@
       },
       "first_frame": {
         "name": "最初のフレーム",
-        "tooltip": "image モードでは必須です。image_1 とは別です。"
+        "tooltip": "従来の入力です。image または画像のみの auto モードでは image_1 を代わりに使用できます。"
       },
       "model_first_frame": {
         "name": "最初のフレーム",
-        "tooltip": "以前のワークフロー用の入力です。image モードでは image_1 を代わりに使用できます。"
+        "tooltip": "従来の入力です。image または画像のみの auto モードでは image_1 を代わりに使用できます。"
       },
       "last_frame": {
         "name": "最後のフレーム",
-        "tooltip": "最初のフレームと一緒に接続します。"
+        "tooltip": "従来の入力です。image または画像のみの auto モードでは image_2 を代わりに使用できます。"
       },
       "model_last_frame": {
         "name": "最後のフレーム",
-        "tooltip": "以前のワークフロー用の入力です。image モードでは image_2 を代わりに使用できます。"
+        "tooltip": "従来の入力です。image または画像のみの auto モードでは image_2 を代わりに使用できます。"
       },
       "seed": {
         "name": "シード",
@@ -153,11 +153,11 @@
       },
       "model_reference_images_image_1": {
         "name": "画像 1",
-        "tooltip": "image モードでは最初のフレーム、reference モードでは参照画像 1。"
+        "tooltip": "image または画像のみの auto モードでは最初のフレーム、reference モードでは参照画像 1。"
       },
       "model_reference_images_image_2": {
         "name": "画像 2",
-        "tooltip": "image モードでは最後のフレーム、reference モードでは参照画像 2。"
+        "tooltip": "image または画像のみの auto モードでは最後のフレーム、reference モードでは参照画像 2。"
       },
       "model_reference_images_image_3": {
         "name": "参照画像 3"

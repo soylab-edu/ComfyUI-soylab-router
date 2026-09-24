@@ -181,6 +181,10 @@ class PayloadTests(unittest.TestCase):
                          [("first_frame", first), ("last_frame", last), ("reference_image", extra)])
         references, start, end = _seedance_frame_aliases("reference", {"image_1": first}, None, None)
         self.assertEqual((references, start, end), ([first], None, None))
+        references, start, end = _seedance_frame_aliases("auto", {"image_1": first, "image_2": last}, None, None)
+        self.assertEqual((references, start, end), ([], first, last))
+        references, start, end = _seedance_frame_aliases("auto", {"image_1": first}, None, None, has_other_media=True)
+        self.assertEqual((references, start, end), ([first], None, None))
         with self.assertRaisesRegex(ValueError, "image_1 또는 first_frame"):
             _seedance_frame_aliases("image", {"image_1": first}, first, None)
         with self.assertRaisesRegex(ValueError, "image_2 또는 last_frame"):
@@ -309,7 +313,7 @@ class WorkflowTests(unittest.TestCase):
         nodes = {node["id"]: node for node in workflow["nodes"]}
         self.assertEqual([nodes[n]["type"] for n in (1, 2, 3)], ["LoadImage", "SoylabComfyRouter", "SaveVideo"])
         self.assertEqual(nodes[1]["widgets_values"][0], "soylab-reference.png")
-        self.assertEqual(nodes[2]["widgets_values_named"]["model.mode"], "image")
+        self.assertEqual(nodes[2]["widgets_values_named"]["model.mode"], "auto")
         self.assertEqual(nodes[2]["widgets_values_named"]["api_key"], "")
         self.assertEqual(workflow["links"], [[1, 1, 0, 2, 14, "IMAGE"], [2, 2, 1, 3, 0, "VIDEO"]])
         self.assertEqual(nodes[2]["inputs"][8]["link"], None)

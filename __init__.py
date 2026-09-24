@@ -132,7 +132,7 @@ def _model_inputs(spec):
     default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
     inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="Router 실행 경로입니다. Comfy는 파트너 모델의 기본 경로이며 모델 제작사(예: Runway)와는 다른 개념입니다. 공식 대체 경로만 선택지에 표시됩니다.")]
     if spec.adapter == "seedance":
-        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="작업 모드", default=spec.modes[0], tooltip="image 모드에서는 image_1=첫 프레임, image_2=마지막 프레임입니다. reference 모드에서는 참조 이미지로 사용합니다."))
+        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="작업 모드", default=spec.modes[0], tooltip="image 또는 이미지 전용 auto 모드: image_1=첫 프레임, image_2=마지막 프레임. reference 모드: 참조 이미지."))
     elif spec.adapter == "seedream" and spec.modes:
         inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="프롬프트 최적화 모드", default=spec.modes[0], tooltip="참조 이미지를 사용할 때 standard=품질 우선, fast=속도 우선. Seedream 5.0 Pro에서 지원합니다."))
     elif spec.adapter == "seed_audio" and spec.modes:
@@ -185,9 +185,10 @@ def _ordered_values(group):
     return [value for _, value in sorted(group.items(), key=lambda pair: int(pair[0].rsplit("_", 1)[-1])) if value is not None]
 
 
-def _seedance_frame_aliases(mode, image_inputs, first_frame, last_frame):
-    """In image mode, numbered image sockets are the start and end frames."""
-    if mode != "image":
+def _seedance_frame_aliases(mode, image_inputs, first_frame, last_frame, *, has_other_media=False):
+    """Use numbered images as frames in image mode or image-only auto mode."""
+    image_only_auto = mode == "auto" and not has_other_media and first_frame is None and last_frame is None
+    if mode != "image" and not image_only_auto:
         return _ordered_values(image_inputs), first_frame, last_frame
     if image_inputs and not isinstance(image_inputs, dict):
         raise ValueError("참조 입력 형식이 잘못되었습니다.")
@@ -285,13 +286,17 @@ class SoylabComfyRouter(IO.ComfyNode):
         image_inputs = values.get("reference_images")
         first_input = values.get("first_frame")
         last_input = values.get("last_frame")
+        video_inputs = _ordered_values(values.get("reference_videos"))
+        audio_inputs = _ordered_values(values.get("reference_audios"))
         if spec.adapter == "seedance":
-            image_values, first_input, last_input = _seedance_frame_aliases(values.get("mode"), image_inputs, first_input, last_input)
+            image_values, first_input, last_input = _seedance_frame_aliases(
+                values.get("mode") or "auto", image_inputs, first_input, last_input,
+                has_other_media=bool(video_inputs or audio_inputs),
+            )
         else:
             image_values = _ordered_values(image_inputs)
         images = [image_data_uri(image) for image in image_values]
-        audios = ["data:audio/wav;base64," + base64.b64encode(audio_wav_bytes(audio)).decode("ascii") for audio in _ordered_values(values.get("reference_audios"))]
-        video_inputs = _ordered_values(values.get("reference_videos"))
+        audios = ["data:audio/wav;base64," + base64.b64encode(audio_wav_bytes(audio)).decode("ascii") for audio in audio_inputs]
         videos = []
         for video in video_inputs:
             report("uploading")

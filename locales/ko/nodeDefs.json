@@ -25,7 +25,7 @@
       },
       "model_mode": {
         "name": "작업 모드",
-        "tooltip": "image: image_1=첫 프레임, image_2=마지막 프레임. reference: 번호가 붙은 이미지 입력을 참조로 사용합니다."
+        "tooltip": "image 또는 이미지 전용 auto: image_1=첫 프레임, image_2=마지막 프레임. reference: 번호가 붙은 이미지 입력을 참조로 사용합니다."
       },
       "preset_voice": {
         "name": "기본 음성",
@@ -69,19 +69,19 @@
       },
       "first_frame": {
         "name": "첫 프레임",
-        "tooltip": "image 모드에서 필수입니다. image_1과 별도입니다."
+        "tooltip": "기존 워크플로용 입력입니다. image 또는 이미지 전용 auto 모드에서는 image_1을 대신 연결할 수 있습니다."
       },
       "model_first_frame": {
         "name": "첫 프레임",
-        "tooltip": "이전 워크플로용 첫 프레임 입력입니다. image 모드에서는 image_1을 대신 연결할 수 있습니다."
+        "tooltip": "기존 워크플로용 입력입니다. image 또는 이미지 전용 auto 모드에서는 image_1을 대신 연결할 수 있습니다."
       },
       "last_frame": {
         "name": "마지막 프레임",
-        "tooltip": "첫 프레임과 함께 연결하세요."
+        "tooltip": "기존 워크플로용 입력입니다. image 또는 이미지 전용 auto 모드에서는 image_2를 대신 연결할 수 있습니다."
       },
       "model_last_frame": {
         "name": "마지막 프레임",
-        "tooltip": "이전 워크플로용 마지막 프레임 입력입니다. image 모드에서는 image_2를 대신 연결할 수 있습니다."
+        "tooltip": "기존 워크플로용 입력입니다. image 또는 이미지 전용 auto 모드에서는 image_2를 대신 연결할 수 있습니다."
       },
       "seed": {
         "name": "시드",
@@ -153,11 +153,11 @@
       },
       "model_reference_images_image_1": {
         "name": "이미지 1",
-        "tooltip": "image 모드: 첫 프레임. reference 모드: 참조 이미지 1."
+        "tooltip": "image 또는 이미지 전용 auto 모드: 첫 프레임. reference 모드: 참조 이미지 1."
       },
       "model_reference_images_image_2": {
         "name": "이미지 2",
-        "tooltip": "image 모드: 마지막 프레임. reference 모드: 참조 이미지 2."
+        "tooltip": "image 또는 이미지 전용 auto 모드: 마지막 프레임. reference 모드: 참조 이미지 2."
       },
       "model_reference_images_image_3": {
         "name": "참조 이미지 3"

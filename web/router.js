@@ -34,7 +34,7 @@ try {
 } catch (_) {}
 
 function priceSignature(node, spec, route) {
-  const frames = frameSelection(node);
+  const frames = frameSelection(node, spec);
   return JSON.stringify([
     spec.model_id, route,
     field(node, "resolution", ""), field(node, "ratio", ""), field(node, "duration", ""),
@@ -78,7 +78,7 @@ function routeResolutionNote(spec, route, resolution) {
 function directReference(node, spec, route) {
   const entry = pricing.models?.[spec?.model_id]?.[route];
   if (!entry || field(node, "mode") === "edit" || field(node, "mode") === "extend") return null;
-  const { firstFrame, lastFrame, images } = frameSelection(node);
+  const { firstFrame, lastFrame, images } = frameSelection(node, spec);
   const videos = refCount(node, "videos");
   const audios = refCount(node, "audios");
   const allowed = entry.reference_inputs;
@@ -205,9 +205,11 @@ function refCount(node, type) {
   return node.inputs?.filter((input) => input.name?.startsWith(`${inputPrefix(node)}.reference_${type}.`) && input.link != null).length ?? 0;
 }
 
-function frameSelection(node) {
+function frameSelection(node, spec) {
   const connected = (name) => !!node.inputs?.some((input) => input.name === `${inputPrefix(node)}.${name}` && input.link != null);
-  const imageMode = field(node, "mode") === "image";
+  const mode = field(node, "mode");
+  const imageMode = spec?.adapter === "seedance" && (mode === "image" || (mode === "auto" && !refCount(node, "videos") && !refCount(node, "audios")
+    && !connected("first_frame") && !connected("last_frame")));
   const aliasFirst = imageMode && connected("reference_images.image_1");
   const aliasLast = imageMode && connected("reference_images.image_2");
   return {
