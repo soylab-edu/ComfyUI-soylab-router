@@ -1,0 +1,392 @@
+{
+  "id": "8a2553ae-8003-436a-ad06-50d577a7118e",
+  "revision": 0,
+  "last_node_id": 5,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [
+        0,
+        80
+      ],
+      "size": [
+        400,
+        440
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "COMBO",
+          "widget": {
+            "name": "image"
+          },
+          "link": null
+        },
+        {
+          "name": "upload",
+          "type": "IMAGEUPLOAD",
+          "widget": {
+            "name": "upload"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "soylab-reference.png",
+        "image"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "SoylabComfyRouter",
+      "pos": [
+        460,
+        60
+      ],
+      "size": [
+        660,
+        760
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "api_key",
+          "type": "STRING",
+          "widget": {
+            "name": "api_key"
+          },
+          "link": null
+        },
+        {
+          "name": "model",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "model"
+          },
+          "link": null
+        },
+        {
+          "name": "model.execution_provider",
+          "type": "COMBO",
+          "widget": {
+            "name": "model.execution_provider"
+          },
+          "link": null
+        },
+        {
+          "name": "model.mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "model.mode"
+          },
+          "link": null
+        },
+        {
+          "name": "model.prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "model.prompt"
+          },
+          "link": null
+        },
+        {
+          "name": "model.resolution",
+          "type": "COMBO",
+          "widget": {
+            "name": "model.resolution"
+          },
+          "link": null
+        },
+        {
+          "name": "model.ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "model.ratio"
+          },
+          "link": null
+        },
+        {
+          "name": "model.duration",
+          "type": "COMBO",
+          "widget": {
+            "name": "model.duration"
+          },
+          "link": null
+        },
+        {
+          "name": "model.first_frame",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "name": "model.last_frame",
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "model.seed",
+          "type": "INT",
+          "widget": {
+            "name": "model.seed"
+          },
+          "link": null
+        },
+        {
+          "name": "model.watermark",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "model.watermark"
+          },
+          "link": null
+        },
+        {
+          "name": "model.generate_audio",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "model.generate_audio"
+          },
+          "link": null
+        },
+        {
+          "name": "model.output_format",
+          "type": "COMBO",
+          "widget": {
+            "name": "model.output_format"
+          },
+          "link": null
+        },
+        {
+          "name": "advanced_json",
+          "type": "STRING",
+          "widget": {
+            "name": "advanced_json"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": [
+            2
+          ]
+        },
+        {
+          "name": "AUDIO",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "RAW JSON",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "COST",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SoylabComfyRouter"
+      },
+      "widgets_values": [
+        "",
+        "BytePlus Seedance 2.5",
+        "higgsfield",
+        "image",
+        "Create a gentle 4-second portrait video from the supplied first frame. Keep the woman’s face, hairstyle, white dress, and garden setting consistent. She softly looks toward the camera as a light breeze moves her hair. Natural motion, realistic skin texture, no text.",
+        "480p",
+        "9:16",
+        4,
+        0,
+        false,
+        false,
+        "mp4",
+        ""
+      ],
+      "widgets_values_named": {
+        "api_key": "",
+        "model": "BytePlus Seedance 2.5",
+        "model.execution_provider": "higgsfield",
+        "model.mode": "image",
+        "model.prompt": "Create a gentle 4-second portrait video from the supplied first frame. Keep the woman’s face, hairstyle, white dress, and garden setting consistent. She softly looks toward the camera as a light breeze moves her hair. Natural motion, realistic skin texture, no text.",
+        "model.resolution": "480p",
+        "model.ratio": "9:16",
+        "model.duration": 4,
+        "model.seed": 0,
+        "model.watermark": false,
+        "model.generate_audio": false,
+        "model.output_format": "mp4",
+        "advanced_json": ""
+      },
+      "color": "#2E104B",
+      "bgcolor": "#1E1B25",
+      "title": "SOYLAB Comfy Router"
+    },
+    {
+      "id": 3,
+      "type": "SaveVideo",
+      "pos": [
+        1190,
+        180
+      ],
+      "size": [
+        360,
+        200
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "link": 2
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": null
+        },
+        {
+          "name": "format",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "format"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "VIDEO",
+          "type": "VIDEO",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SaveVideo"
+      },
+      "widgets_values": [
+        "SOYLAB_Router/Seedance_2_5",
+        "mp4"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "SOYLAB_Router/Seedance_2_5",
+        "format": "mp4"
+      }
+    },
+    {
+      "id": 4,
+      "type": "MarkdownNote",
+      "pos": [
+        0,
+        940
+      ],
+      "size": [
+        590,
+        660
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "한국어 사용 방법",
+      "properties": {},
+      "widgets_values": [
+        "# Seedance 2.5 예제 사용법\n\n[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [소이랩 유튜브](https://www.youtube.com/@soy_lab) · [소이랩 홈페이지](https://soylab.ai/)\n\n1. **API 키 받기:** [Comfy 개발자 플랫폼의 API 키 페이지](https://platform.comfy.org/profile/api-keys?onboarding=router)에 로그인 → API 키 생성 → 같은 워크스페이스에 크레딧 충전.\n2. **키 넣기:** Router 노드의 `api_key`에 입력하거나 **API KEY.INI 열기** 버튼으로 개인 키 파일에 저장. 키를 넣은 워크플로는 공유하지 마세요.\n3. **이미지 준비:** 이 폴더의 `soylab-reference.png`를 ComfyUI `input` 폴더에 복사. 이미지 로드 노드에서 해당 파일을 선택하세요. 이미지의 원래 워크플로 메타데이터는 제거했습니다.\n4. **워크플로 열기:** `seedance_2_5_image_to_video.json`을 ComfyUI에 드래그. 이미지 로드 → Router의 `first_frame` → 비디오 저장이 연결되어 있습니다.\n5. **실행:** 기본값은 Seedance 2.5, `higgsfield`, `image`, 480p, 9:16, 4초입니다. 프롬프트와 비용을 확인하고 실행하세요. 결과는 ComfyUI `output/SOYLAB_Router`에 저장됩니다.\n\n`Comfy`는 Router의 파트너 모델 기본 실행 경로입니다. `Runway`는 모델 이름에 들어가지만 현재 Router의 별도 실행 공급자 선택지에는 없습니다.\n"
+      ],
+      "color": "#2A1646",
+      "bgcolor": "#1C1030"
+    },
+    {
+      "id": 5,
+      "type": "MarkdownNote",
+      "pos": [
+        650,
+        940
+      ],
+      "size": [
+        590,
+        660
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "English instructions",
+      "properties": {},
+      "widgets_values": [
+        "# Seedance 2.5 example guide\n\n[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB website](https://soylab.ai/)\n\n1. **Get an API key:** Sign in to the [Comfy developer API keys page](https://platform.comfy.org/profile/api-keys?onboarding=router) → create a key → add credits to the same workspace.\n2. **Enter the key:** Paste it into the Router node's `api_key` field, or use **Open API KEY.INI** to save it in your private key file. Do not share a workflow containing a key.\n3. **Prepare the image:** Copy `soylab-reference.png` into ComfyUI's `input` folder and select it in Load Image. The source workflow metadata has been removed.\n4. **Open the workflow:** Drag `seedance_2_5_image_to_video.json` into ComfyUI. Load Image → Router `first_frame` → Save Video are connected.\n5. **Run:** Defaults are Seedance 2.5, `higgsfield`, `image`, 480p, 9:16, and 4 seconds. Review the prompt and cost before running. The video is saved in ComfyUI `output/SOYLAB_Router`.\n\n`Comfy` is Router's default partner-model serving route. `Runway` appears in model names but is not currently a separate Router serving-provider option.\n"
+      ],
+      "color": "#2A1646",
+      "bgcolor": "#1C1030"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      8,
+      "IMAGE"
+    ],
+    [
+      2,
+      2,
+      1,
+      3,
+      0,
+      "VIDEO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.78,
+      "offset": [
+        20,
+        20
+      ]
+    }
+  },
+  "version": 0.4
+}

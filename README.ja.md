@@ -1,5 +1,7 @@
 # SOYLAB Comfy Router
 
+[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB 公式サイト](https://soylab.ai/)
+
 **言語:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
 個人の Comfy API キーで [Comfy Router](https://comfy.org/platform/router) を利用する**ローカル ComfyUI カスタムノード**です。モデルと Router の実行プロバイダーを別々に選び、モデルに応じて画像・動画・音声を接続できます。新しいノードの初期値は `BytePlus Seedance 2.5` と `higgsfield` です。参照入力は ComfyUI の Autogrow により、モデルごとの上限まで増やせます。
@@ -15,7 +17,7 @@ Python 標準ライブラリから Router REST API を直接呼び出すため�
 3. ノードの `api_key` 欄に入力するか、INI ボタンで OS のテキストエディターから `API KEY.INI` を編集します。ファイルがなければボタンは **INI ファイルを作成してキーを入力**、あれば **API KEY.INI を開く** と表示されます。ボタンはファイルを作成・開くだけで、キーの内容をブラウザーに返しません。このファイルは Git から除外されています。共有するワークフローでは、保存され得るノード入力欄より INI ファイルの使用を推奨します。
 4. **Soylab / Comfy Router → SOYLAB Comfy Router** を追加し、モデル、プロバイダー、タスクモード、出力設定を選びます。有効な画像・動画・音声出力を保存ノードにつなぎ、実行します。
 
-`workflows` フォルダーには [GPT Image 2 の画像編集例](workflows/image_edit_gpt_image_2.json)、グラフ内の[韓国語](workflows/README.ko.md)・[英語](workflows/README.en.md) Markdown メモ、[サンプル画像](workflows/soylab-sample-image.png)があります。例のワークフローに API キーは含まれません。
+`workflows` フォルダーには [Seedance 2.5 の画像→動画例](workflows/seedance_2_5_image_to_video.json)と [GPT Image 2 の画像編集例](workflows/image_edit_gpt_image_2.json)があります。[ワークフローメタデータを削除した参照画像](workflows/soylab-reference.png)を ComfyUI の `input` フォルダーにコピーしてください。動画例は画像読み込み→Router→動画保存を接続し、[韓国語](workflows/USAGE.ko.md)・[英語](workflows/USAGE.en.md)の使用方法メモを含みます。API キーは含まれません。
 
 ## モデルとモード
 

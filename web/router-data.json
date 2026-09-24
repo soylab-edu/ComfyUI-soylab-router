@@ -352,12 +352,16 @@
             "checked_at": "2026-09-24"
           },
           "higgsfield": {
-            "kind": "direct_api_per_output_second_range",
-            "range": [
-              0.144,
-              0.3236
-            ],
-            "range_scope": "480–720p 전체 공개 범위 · 해상도별 단가 미확인",
+            "kind": "direct_api_video_tokens",
+            "token_pricing": {
+              "usd_per_1k_video_tokens": 0.0214,
+              "fps": 24,
+              "short_side_pixels": {
+                "480p": 480,
+                "720p": 720
+              }
+            },
+            "range_scope": "공개 토큰 요율 기반 추정 · Router 실제 청구액 별도",
             "reference_inputs": {
               "images": 30,
               "videos": 0,
@@ -367,15 +371,15 @@
             "approximate": true,
             "source": "https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video/playground",
             "checked_at": "2026-09-24",
-            "note": "Higgsfield 공개 API 문서는 480p/720p 요금만 게시합니다. Higgsfield 앱은 1080p를 제공하지만 Router의 higgsfield 경로 가능 여부와 1080p 비용은 확인되지 않았습니다. 이 가격 범위를 1080p에 적용하지 마세요.",
+            "note": "Higgsfield 공개 API의 1,000 비디오 토큰당 $0.0214와 24fps를 선택한 해상도·화면비·초수에 적용한 추정입니다. 실제 출력 픽셀 수, 할인, Router 요금에 따라 청구액은 달라집니다. 1080p에는 적용하지 않습니다.",
             "priced_resolutions": [
               "480p",
               "720p"
             ],
             "range_scope_i18n": {
-              "en": "Published 480–720p range · rate by resolution unverified",
-              "ja": "公開されている 480–720p の範囲 · 解像度別料金は未確認",
-              "zh": "公开的 480–720p 范围 · 未核实各分辨率价格"
+              "en": "Estimate from published token rate · actual Router charge differs",
+              "ja": "公開トークン単価による推定 · Router の実際の請求額は別",
+              "zh": "依据公开 Token 单价估算 · Router 实际扣费另计"
             }
           },
           "runware": {

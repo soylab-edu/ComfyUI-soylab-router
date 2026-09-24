@@ -13,11 +13,11 @@
       },
       "execution_provider": {
         "name": "Provider",
-        "tooltip": "The provider that executes the request through Comfy Router. This is distinct from the model maker."
+        "tooltip": "Router serving route. Comfy is the default partner-model route; the model maker (for example, Runway) is separate. Only official alternate routes are listed."
       },
       "model_execution_provider": {
         "name": "Provider",
-        "tooltip": "The provider that executes the request through Comfy Router. This is distinct from the model maker."
+        "tooltip": "Router serving route. Comfy is the default partner-model route; the model maker (for example, Runway) is separate. Only official alternate routes are listed."
       },
       "mode": {
         "name": "Mode",

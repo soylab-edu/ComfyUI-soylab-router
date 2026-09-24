@@ -60,6 +60,8 @@ class CatalogTests(unittest.TestCase):
         runway = next(option for option in model.options if option.key == "Runway Gen-4 Turbo Video")
         self.assertEqual(runway.inputs[0].default, "Comfy")
         self.assertEqual(runway.inputs[0].options, ["Comfy"])
+        aleph = next(option for option in model.options if option.key == "Runway Aleph 2")
+        self.assertEqual(aleph.inputs[0].options, ["Comfy"])
         legacy, _ = _selection({"model": "Dreamina / Seedance 2.5", "execution_provider": "higgsfield"})
         self.assertEqual(legacy.model_id, spec.model_id)
 
@@ -97,11 +99,16 @@ class CatalogTests(unittest.TestCase):
                     self.assertLessEqual(references["audios"], BY_ID[model_id].audios)
                     self.assertIsInstance(references["last_frame"], bool)
                 self.assertTrue(set(entry.get("priced_resolutions", ())).issubset(BY_ID[model_id].resolutions))
-                if "range_scope" in entry:
-                    self.assertIn("range", entry)
-                rates = entry.get("rates") or entry.get("range")
-                self.assertTrue(rates)
-                self.assertTrue(all(float(rate) > 0 for rate in (rates.values() if isinstance(rates, dict) else rates)))
+                if token_rule := entry.get("token_pricing"):
+                    self.assertGreater(token_rule["usd_per_1k_video_tokens"], 0)
+                    self.assertGreater(token_rule["fps"], 0)
+                    self.assertTrue(set(token_rule["short_side_pixels"]).issubset(BY_ID[model_id].resolutions))
+                else:
+                    if "range_scope" in entry:
+                        self.assertIn("range", entry)
+                    rates = entry.get("rates") or entry.get("range")
+                    self.assertTrue(rates)
+                    self.assertTrue(all(float(rate) > 0 for rate in (rates.values() if isinstance(rates, dict) else rates)))
 
 
 class PayloadTests(unittest.TestCase):
@@ -278,6 +285,22 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(len(workflow["links"]), 2)
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[4]["widgets_values"][0])
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[5]["widgets_values"][0])
+
+    def test_seedance_sample_has_clean_reference_and_saved_video(self):
+        from PIL import Image
+        root = pathlib.Path(__file__).resolve().parents[1]
+        workflow = json.loads((root / "workflows/seedance_2_5_image_to_video.json").read_text(encoding="utf-8"))
+        nodes = {node["id"]: node for node in workflow["nodes"]}
+        self.assertEqual([nodes[n]["type"] for n in (1, 2, 3)], ["LoadImage", "SoylabComfyRouter", "SaveVideo"])
+        self.assertEqual(nodes[1]["widgets_values"][0], "soylab-reference.png")
+        self.assertEqual(nodes[2]["widgets_values_named"]["model.mode"], "image")
+        self.assertEqual(nodes[2]["widgets_values_named"]["api_key"], "")
+        self.assertEqual(workflow["links"], [[1, 1, 0, 2, 8, "IMAGE"], [2, 2, 1, 3, 0, "VIDEO"]])
+        self.assertEqual(nodes[2]["inputs"][8]["name"], "model.first_frame")
+        self.assertEqual(len([node for node in nodes.values() if node["type"] == "MarkdownNote"]), 2)
+        with Image.open(root / "workflows/soylab-reference.png") as image:
+            self.assertNotIn("prompt", image.info)
+            self.assertNotIn("workflow", image.info)
 
 
 class KeyEditorTests(unittest.TestCase):

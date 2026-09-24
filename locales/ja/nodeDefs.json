@@ -13,11 +13,11 @@
       },
       "execution_provider": {
         "name": "供給元",
-        "tooltip": "Comfy Router が実際の実行に使う供給元です。モデルの開発元とは別です。"
+        "tooltip": "Router の実行経路です。Comfy はパートナーモデルの既定経路で、モデルの制作元（例: Runway）とは別です。公式の代替経路のみ表示します。"
       },
       "model_execution_provider": {
         "name": "供給元",
-        "tooltip": "Comfy Router が実際の実行に使う供給元です。モデルの開発元とは別です。"
+        "tooltip": "Router の実行経路です。Comfy はパートナーモデルの既定経路で、モデルの制作元（例: Runway）とは別です。公式の代替経路のみ表示します。"
       },
       "mode": {
         "name": "モード",

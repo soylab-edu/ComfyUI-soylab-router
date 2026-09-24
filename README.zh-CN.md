@@ -1,5 +1,7 @@
 # SOYLAB Comfy Router
 
+[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB 官网](https://soylab.ai/)
+
 **语言：** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
 这是一个使用个人 Comfy API 密钥调用 [Comfy Router](https://comfy.org/platform/router) 的**本地 ComfyUI 自定义节点**。模型与 Router 的实际执行服务商分别选择，并可根据模型连接图像、视频和音频。新节点默认选择 `BytePlus Seedance 2.5` 和 `higgsfield`。参考输入接口通过 ComfyUI 的 Autogrow 增加，数量不超过对应模型的上限。
@@ -15,7 +17,7 @@
 3. 可在节点的 `api_key` 输入密钥，也可点击 INI 按钮，在操作系统的文本编辑器中填写 `API KEY.INI`。文件不存在时，按钮显示 **创建 INI 文件并输入密钥**；已存在时显示 **打开 API KEY.INI**。按钮只创建或打开文件，不会把文件内容返回浏览器。该文件已被 Git 忽略。共享工作流时，建议使用 INI 文件，因为节点输入中的密钥可能保存在工作流导出文件中。
 4. 从 **Soylab / Comfy Router → SOYLAB Comfy Router** 添加节点，选择模型、服务商、任务模式及输出设置。将启用的图像、视频或音频输出连接到保存节点，然后运行工作流。
 
-`workflows` 文件夹包含 [GPT Image 2 图像编辑示例](workflows/image_edit_gpt_image_2.json)、工作流内的[韩语](workflows/README.ko.md)与[英语](workflows/README.en.md) Markdown 说明，以及[示例图像](workflows/soylab-sample-image.png)。示例工作流不含 API 密钥。
+`workflows` 文件夹包含 [Seedance 2.5 图像转视频示例](workflows/seedance_2_5_image_to_video.json)和 [GPT Image 2 图像编辑示例](workflows/image_edit_gpt_image_2.json)。请将[已删除工作流元数据的参考图像](workflows/soylab-reference.png)复制到 ComfyUI 的 `input` 文件夹。视频示例连接了加载图像→Router→保存视频，并包含[韩语](workflows/USAGE.ko.md)和[英语](workflows/USAGE.en.md)使用说明。示例不含 API 密钥。
 
 ## 模型与任务模式
 

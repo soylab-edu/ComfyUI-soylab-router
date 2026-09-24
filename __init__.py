@@ -130,7 +130,7 @@ def _media_inputs(spec):
 def _model_inputs(spec):
     route_options = ["Comfy", *ALT_PROVIDERS.get(spec.model_id, ())]
     default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
-    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="모델명 앞의 제작사와 다른 개념입니다. Comfy Router가 실제 실행에 사용할 공급자이며 Comfy가 기본 경로입니다.")]
+    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="Router 실행 경로입니다. Comfy는 파트너 모델의 기본 경로이며 모델 제작사(예: Runway)와는 다른 개념입니다. 공식 대체 경로만 선택지에 표시됩니다.")]
     if spec.adapter == "seedance":
         inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="작업 모드", default=spec.modes[0], tooltip="auto=자동 · text=텍스트만 · image=첫/마지막 프레임 · reference=참조 미디어 · edit=영상 편집 · extend=영상 연장. image_1은 첫 프레임이 아닙니다."))
     elif spec.adapter == "seedream" and spec.modes:

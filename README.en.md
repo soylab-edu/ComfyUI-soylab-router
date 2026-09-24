@@ -1,5 +1,7 @@
 # SOYLAB Comfy Router
 
+[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB website](https://soylab.ai/)
+
 **Languages:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
 A local ComfyUI custom node that calls [Comfy Router](https://comfy.org/platform/router) with your personal Comfy API key. The purple node uses the supplied Soylab mark and purple-to-green header. Its two selection controls are **Model** and **Provider**. Model entries show names such as `Runway Gen-4 Turbo Video` and `BytePlus Seedance 2.5`; Provider lists only Router execution paths available for the chosen model. New nodes default to `BytePlus Seedance 2.5` with `higgsfield`. Reference sockets use native `Autogrow` with model-specific caps.
@@ -15,7 +17,7 @@ This node sends REST requests with Python's standard library. The SDK installati
 3. Enter the key in the node's `api_key` field **or** use its local key-file button. When `API KEY.INI` is absent, the button says **Create INI file and enter key**; when present, it says **Open API KEY.INI**. Clicking it creates a private blank file if needed and opens it in the operating system's text editor. The status check returns only whether the file exists, never its contents. You can also copy `API KEY.INI.example` manually. `API KEY.INI` is ignored by Git. A key typed into a node may be saved in a workflow export, so clear that field and use the INI file for shared workflows.
 4. Add **SOYLAB Comfy Router** from **Soylab / Comfy Router**. Choose a model, an available Router provider, resolution and any references. Connect the active `IMAGE`, `VIDEO` or `AUDIO` output to a save node, then queue the workflow.
 
-The `workflows` folder contains [a GPT Image 2 image-editing example](workflows/image_edit_gpt_image_2.json), with [Korean](workflows/README.ko.md) and [English](workflows/README.en.md) Markdown notes embedded in the graph. Upload any image into `Load Image`; [the full-size sample image](workflows/soylab-sample-image.png) is included. The sample workflow contains no API key.
+The `workflows` folder contains a [Seedance 2.5 image-to-video example](workflows/seedance_2_5_image_to_video.json) and a [GPT Image 2 image-editing example](workflows/image_edit_gpt_image_2.json). Both use [the reference image with workflow metadata removed](workflows/soylab-reference.png). Copy the image into ComfyUI's `input` folder before opening a sample. The video sample connects Load Image → Router → Save Video and embeds [Korean](workflows/USAGE.ko.md) and [English](workflows/USAGE.en.md) usage notes. Neither workflow contains an API key.
 
 ## Included model families
 

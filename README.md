@@ -1,5 +1,7 @@
 # SOYLAB Comfy Router
 
+[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [소이랩 유튜브](https://www.youtube.com/@soy_lab) · [소이랩 홈페이지](https://soylab.ai/)
+
 **언어:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
 개인 Comfy API 키로 [Comfy Router](https://comfy.org/platform/router)를 호출하는 **로컬 ComfyUI 커스텀 노드**입니다. 모델과 Router 실행 공급자를 따로 선택하고, 모델에 맞는 이미지·영상·오디오 입력을 연결할 수 있습니다. 새 노드의 기본값은 `BytePlus Seedance 2.5`와 `higgsfield`입니다. 모델별 최대 참조 슬롯은 ComfyUI의 Autogrow로 늘어납니다.
@@ -15,7 +17,7 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 3. 노드의 `api_key`에 키를 넣거나, 노드의 INI 버튼을 눌러 운영체제 편집기에서 `API KEY.INI`를 작성합니다. 파일이 없으면 버튼이 **INI 파일 생성 및 키 입력하기**, 있으면 **API KEY.INI 열기**로 표시됩니다. 버튼은 파일을 만들거나 열지만 키 내용은 브라우저로 보내지 않습니다. `API KEY.INI`는 Git에서 제외됩니다. 공유할 워크플로에는 키가 저장될 수 있는 노드 입력 대신 INI 파일을 사용하세요.
 4. **Soylab / Comfy Router → SOYLAB Comfy Router**를 추가하고 모델·공급자·작업 모드·출력 설정을 고릅니다. 활성화된 이미지·비디오·오디오 출력을 저장 노드에 연결한 뒤 실행합니다.
 
-`workflows` 폴더에는 [GPT Image 2 이미지 편집 예시](workflows/image_edit_gpt_image_2.json), [한국어](workflows/README.ko.md)와 [영어](workflows/README.en.md) Markdown 설명 노드, [샘플 이미지](workflows/soylab-sample-image.png)가 있습니다. 예시 워크플로에는 API 키가 없습니다.
+`workflows` 폴더에는 [Seedance 2.5 이미지→비디오 예시](workflows/seedance_2_5_image_to_video.json)와 [GPT Image 2 이미지 편집 예시](workflows/image_edit_gpt_image_2.json)가 있습니다. 두 예시 모두 [메타데이터를 제거한 참조 이미지](workflows/soylab-reference.png)를 사용하며 API 키는 포함하지 않습니다. 이미지를 ComfyUI의 `input` 폴더에 복사한 뒤 예시를 여세요. 영상 예시에는 이미지 로드·Router·비디오 저장 노드와 [한국어](workflows/USAGE.ko.md)·[영어](workflows/USAGE.en.md) 사용 방법 메모가 연결되어 있습니다.
 
 ## 모델과 작업 모드
 
@@ -37,9 +39,9 @@ Higgsfield 경로의 Seedance 이미지 입력은 해당 업체의 이미지→�
 
 ## 공급자와 비용
 
-모델명 앞의 `Runway` 또는 `BytePlus`는 모델 제작사/등록 계열입니다. **공급자 선택**은 Router가 실제 요청을 실행할 경로입니다. 예를 들어 Seedance 2.5의 Router 경로에는 `Comfy`, `fal`, `higgsfield`, `runware`, `wavespeed`가 있습니다. [공식 공급자 목록](https://docs.comfy.org/development/comfy-router/providers)에 없는 `Dreamina`나 `Runway`를 별도 실행 경로로 만들지 않습니다.
+모델명 앞의 `Runway` 또는 `BytePlus`는 모델 제작사/등록 계열입니다. **공급자 선택**은 Router가 실제 요청을 실행할 경로입니다. `Comfy`는 Router의 기본 실행 경로이며 이 커스텀 노드는 항상 Router API를 호출합니다. Seedance 2.5의 대체 경로에는 `fal`, `higgsfield`, `runware`, `wavespeed`가 있습니다. 현재 `Runway Aleph 2`는 모델 목록에는 있지만 [공식 공급자 목록](https://docs.comfy.org/development/comfy-router/providers)에 Runway 대체 경로가 없어 `Comfy`만 선택할 수 있습니다.
 
-상단 가격 표시와 **Router 공급자별 비용 확인** 창은 모델·공급자·해상도·길이 등에 따라 바뀝니다. `Comfy`의 공개 단가는 [공식 파트너 노드 가격표](https://docs.comfy.org/tutorials/partner-nodes/pricing)를 기준으로 추정합니다. 다른 공급자의 **직결 API 가격**은 날짜와 출처를 기록한 비교 자료이며 Router 청구액을 보장하지 않습니다. 달러→크레딧 참고 환산에는 Comfy가 공개한 **$1 = 211 C**를 사용합니다. 실제 **사용 크레딧**은 Router가 `X-Comfy-Credits-Used`를 제공할 때만 표시합니다. 값이 없는 응답을 `0 C`로 처리하지 않으며, 이 경우 Comfy Credit History에서 확인해야 합니다.
+상단 가격 표시와 **Router 공급자별 비용 확인** 창은 모델·공급자·해상도·길이 등에 따라 바뀝니다. 길어서 잘리는 상단 배지에 마우스를 올리면 전체 문구가 표시됩니다. `Comfy`의 공개 단가는 [공식 파트너 노드 가격표](https://docs.comfy.org/tutorials/partner-nodes/pricing)를 기준으로 추정합니다. Higgsfield Seedance 2.5는 공개 토큰 요율에 선택한 해상도·화면비·초수를 적용해 `약 X C/N초`로 표시합니다. 다른 공급자의 **직결 API 가격**도 날짜와 출처를 기록한 비교 자료이며 Router 청구액을 보장하지 않습니다. 달러→크레딧 참고 환산에는 Comfy가 공개한 **$1 = 211 C**를 사용합니다. 실제 **사용 크레딧**은 Router가 `X-Comfy-Credits-Used`를 제공할 때만 표시합니다. 값이 없는 응답을 `0 C`로 처리하지 않으며, 이 경우 Comfy Credit History에서 확인해야 합니다.
 
 가격·모델·공급자·지원 설정을 갱신할 때는 [`web/router-data.json`](web/router-data.json)을 수정합니다. Python 노드와 브라우저 표시가 모두 이 파일을 읽습니다. 가격 출처 URL과 확인 날짜를 함께 기록하세요. 새 모델의 요청·응답 형식이 기존 어댑터와 다르면 코드와 스키마 확인도 필요합니다. 데이터 변경 후 ComfyUI를 재시작하고 브라우저를 새로고침하세요.
 

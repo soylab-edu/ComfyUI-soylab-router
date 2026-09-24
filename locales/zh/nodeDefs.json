@@ -13,11 +13,11 @@
       },
       "execution_provider": {
         "name": "供应商",
-        "tooltip": "Comfy Router 实际执行请求的供应商，与模型开发商不同。"
+        "tooltip": "Router 执行路径。Comfy 是合作模型的默认路径，与模型制作方（例如 Runway）不同。仅显示官方替代路径。"
       },
       "model_execution_provider": {
         "name": "供应商",
-        "tooltip": "Comfy Router 实际执行请求的供应商，与模型开发商不同。"
+        "tooltip": "Router 执行路径。Comfy 是合作模型的默认路径，与模型制作方（例如 Runway）不同。仅显示官方替代路径。"
       },
       "mode": {
         "name": "模式",

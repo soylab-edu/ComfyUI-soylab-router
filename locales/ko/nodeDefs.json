@@ -13,11 +13,11 @@
       },
       "execution_provider": {
         "name": "공급자 선택",
-        "tooltip": "Comfy Router가 실제 실행에 사용할 공급자입니다. 모델 제작사와 다른 개념입니다."
+        "tooltip": "Router 실행 경로입니다. Comfy는 파트너 모델의 기본 경로이며 모델 제작사(예: Runway)와 다릅니다. 공식 대체 경로만 표시됩니다."
       },
       "model_execution_provider": {
         "name": "공급자 선택",
-        "tooltip": "Comfy Router가 실제 실행에 사용할 공급자입니다. 모델 제작사와 다른 개념입니다."
+        "tooltip": "Router 실행 경로입니다. Comfy는 파트너 모델의 기본 경로이며 모델 제작사(예: Runway)와 다릅니다. 공식 대체 경로만 표시됩니다."
       },
       "mode": {
         "name": "작업 모드",

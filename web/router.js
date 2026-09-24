@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { routerLocale, routerText } from "./i18n.js";
+import { tokenPriceReference } from "./pricing.js";
 
 const NODE_ID = "SoylabComfyRouter";
 const TITLE = "SOYLAB Comfy Router";
@@ -95,16 +96,21 @@ function directReference(node, spec, route) {
   if (supported && !supported.includes(resolution)) return null;
   if (entry.priced_resolutions && !entry.priced_resolutions.includes(resolution)) return null;
   if (!Number.isFinite(duration) || duration <= 0 || (entry.aspect_ratio && entry.aspect_ratio !== ratio)) return null;
-  const range = entry.range || (Number.isFinite(entry.rates?.[resolution]) ? [entry.rates[resolution], entry.rates[resolution]] : null);
+  const tokenQuote = entry.token_pricing ? tokenPriceReference(entry.token_pricing, resolution, ratio, duration) : null;
+  if (entry.token_pricing && !tokenQuote) return null;
+  const range = tokenQuote ? [tokenQuote.rate, tokenQuote.rate]
+    : entry.range || (Number.isFinite(entry.rates?.[resolution]) ? [entry.rates[resolution], entry.rates[resolution]] : null);
   if (!range) return null;
   const rateDollars = (value) => `$${Number(value.toFixed(5))}`;
   const totalDollars = (value) => `$${value.toFixed(2)}`;
   const rateText = range[0] === range[1] ? rateDollars(range[0]) : `${rateDollars(range[0])}–${rateDollars(range[1])}`;
-  const totalText = range[0] === range[1] ? totalDollars(range[0] * duration) : `${totalDollars(range[0] * duration)}–${totalDollars(range[1] * duration)}`;
+  const totalText = tokenQuote ? totalDollars(tokenQuote.total)
+    : range[0] === range[1] ? totalDollars(range[0] * duration) : `${totalDollars(range[0] * duration)}–${totalDollars(range[1] * duration)}`;
   const credits = (value) => (value * COMFY_CREDITS_PER_USD).toFixed(1);
   const creditRateText = `${credits(range[0])}${range[0] === range[1] ? "" : `–${credits(range[1])}`} C`;
-  const creditTotalText = `${credits(range[0] * duration)}${range[0] === range[1] ? "" : `–${credits(range[1] * duration)}`} C`;
-  return { rateText, totalText, creditRateText, creditTotalText, duration, rangeScope: localizedField(entry, "range_scope"), source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
+  const creditTotalText = tokenQuote ? `${credits(tokenQuote.total)} C`
+    : `${credits(range[0] * duration)}${range[0] === range[1] ? "" : `–${credits(range[1] * duration)}`} C`;
+  return { rateText, totalText, creditRateText, creditTotalText, duration, rangeScope: localizedField(entry, "range_scope"), source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate, tokenEstimate: !!tokenQuote };
 }
 
 function directResolutionNotice(node, spec, route) {
@@ -283,7 +289,7 @@ function estimate(node, spec) {
     comfyText = tr("recent", { credits: `${observed.credits.toFixed(1)} C` });
   } else if (execution !== "Comfy") {
     comfyText = directRef
-      ? tr("directTotal", { provider: execution, credits: directRef.creditTotalText, seconds: directRef.duration, scope: directRef.rangeScope ? ` · ${directRef.rangeScope}` : "" })
+      ? tr("directTotal", { provider: execution, credits: directRef.creditTotalText, seconds: directRef.duration, scope: "" })
       : resolutionNotice || (published ? tr("directPublished", { provider: execution, label: published.label }) : tr("providerPreRunUnavailable", { provider: execution }));
   } else if (quote) {
     const low = quote.total.toFixed(1);
@@ -297,6 +303,26 @@ function estimate(node, spec) {
 
 let pricePopup = null;
 let pricePopupObserver = null;
+let priceTooltip = null;
+
+function showPriceTooltip(label, event) {
+  if (!label || !Number.isFinite(event?.clientX) || !Number.isFinite(event?.clientY)) return;
+  if (!priceTooltip) {
+    priceTooltip = document.createElement("div");
+    priceTooltip.className = "soylab-price-tooltip";
+    document.body.append(priceTooltip);
+  }
+  if (priceTooltip.textContent !== label) priceTooltip.textContent = label;
+  const left = Math.min(event.clientX + 14, innerWidth - priceTooltip.offsetWidth - 8);
+  const top = Math.min(event.clientY + 18, innerHeight - priceTooltip.offsetHeight - 8);
+  priceTooltip.style.left = `${Math.max(8, left)}px`;
+  priceTooltip.style.top = `${Math.max(8, top)}px`;
+}
+
+function hidePriceTooltip() {
+  priceTooltip?.remove();
+  priceTooltip = null;
+}
 
 function closePricePopup() {
   pricePopupObserver?.disconnect();
@@ -450,7 +476,7 @@ function refreshPricePopup() {
     pricePopup.append(line("div", "soylab-price-actual", tr("actual", { credits: priceText(Number(actual)) })));
   }
   pricePopup.append(line("p", "soylab-price-note", tr("costMethod", { date: pricing.updated_at || tr("recentDate"), conversion: COMFY_CREDITS_PER_USD })));
-  if (directRef?.note) pricePopup.append(line("p", "soylab-price-note", tr("rangeNote", { provider: route })));
+  if (directRef?.note) pricePopup.append(line("p", "soylab-price-note", tr(directRef.tokenEstimate ? "tokenNote" : "rangeNote", { provider: route })));
   const pricingLink = document.createElement("a");
   pricingLink.href = "https://docs.comfy.org/tutorials/partner-nodes/pricing";
   pricingLink.target = "_blank";
@@ -602,27 +628,23 @@ function syncVueNode(id) {
   if (!badge) {
     badge = document.createElement("span");
     badge.className = "soylab-price-badge";
-    badge.title = tr("openComparison");
     badge.setAttribute("role", "button");
     badge.tabIndex = 0;
     badge.onclick = (event) => { event.stopPropagation(); openPricePopup(node); };
     badge.onkeydown = (event) => {
       if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openPricePopup(node); }
     };
+    badge.onpointermove = (event) => showPriceTooltip(badge.dataset.fullLabel, event);
+    badge.onpointerleave = hidePriceTooltip;
+    badge.onblur = hidePriceTooltip;
     header.firstElementChild?.append(badge);
   }
   const { spec } = selected(node);
   const price = estimate(node, spec);
   const label = [price.provider, price.comfy].filter(Boolean).join("  |  ");
   if (badge.textContent !== label) badge.textContent = label;
-  const selectedRoute = String(field(node, "execution_provider", "Comfy"));
-  const selectedReference = selectedRoute === "Comfy" ? null : directReference(node, spec, selectedRoute);
-  badge.title = selectedReference?.rangeScope
-    ? tr("scopeCaution", { scope: selectedReference.rangeScope || tr("publicRange") })
-    : selectedReference
-      ? tr("conversionCaution", { conversion: COMFY_CREDITS_PER_USD })
-      : tr("openComparison");
-
+  badge.dataset.fullLabel = label;
+  badge.setAttribute("aria-label", label);
   const providerRow = host.querySelector('[aria-label="execution_provider"]')?.closest(".lg-node-widget");
   if (providerRow) {
     let hint = host.querySelector(".soylab-provider-rate");
@@ -660,7 +682,7 @@ function syncVueNode(id) {
           ? tr("baselineHint", { provider: route, credits: priceText(quote.total) })
           : tr("unknownHint", { provider: route });
     const soleRoute = route === "Comfy" && !spec?.alternates?.length;
-    const message = soleRoute ? tr("soleRoute", { rate }) : rate;
+    const message = soleRoute ? tr("soleRoute", { rate, maker: spec.service }) : rate;
     if (hint.textContent !== message) hint.textContent = message;
   }
 
@@ -713,6 +735,14 @@ function installVueHeaderSupport() {
       color: #fff; background: rgba(20, 8, 40, .85); font-size: 10px; cursor: pointer;
     }
     .soylab-router-vue .soylab-price-badge:hover { background: rgba(20, 8, 40, .98); }
+    .soylab-price-tooltip {
+      position: fixed; z-index: 100001; pointer-events: none;
+      max-width: min(520px, calc(100vw - 16px)); padding: 9px 12px;
+      border: 1px solid #a788c7; border-radius: 9px;
+      background: #21182b; color: #fff; box-shadow: 0 8px 24px #0009;
+      font: 13px/1.4 Inter, Arial, sans-serif; white-space: normal;
+      overflow-wrap: anywhere;
+    }
     .soylab-router-vue .soylab-provider-rate {
       grid-column: 1 / -1; margin: -2px 12px 4px; color: #dcc5f2;
       font-size: 10px; line-height: 1.35;
@@ -816,6 +846,8 @@ function drawHeader(node, ctx) {
   const label = [price.provider, price.comfy].filter(Boolean).join("  |  ");
   ctx.font = "10px Inter, Arial, sans-serif";
   const textWidth = Math.min(ctx.measureText(label).width + 16, Math.max(width - 260, 80));
+  node._soylabBadgeBounds = [width - textWidth - 7, y + 5, textWidth, titleHeight - 10];
+  node._soylabBadgeLabel = label;
   ctx.fillStyle = "rgba(20, 8, 40, .82)";
   ctx.beginPath();
   ctx.roundRect?.(width - textWidth - 7, y + 5, textWidth, titleHeight - 10, 12);
@@ -852,6 +884,24 @@ function markUnsupported(node) {
 }
 
 function installSelectionWatch(node) {
+  const previousMouseMove = node.onMouseMove;
+  node.onMouseMove = function (event, localPosition, ...args) {
+    const result = previousMouseMove?.call(this, event, localPosition, ...args);
+    const x = Array.isArray(localPosition) ? localPosition[0] : event.canvasX - this.pos[0];
+    const y = Array.isArray(localPosition) ? localPosition[1] : event.canvasY - this.pos[1];
+    const [left, top, width, height] = this._soylabBadgeBounds || [];
+    if (x >= left && x <= left + width && y >= top && y <= top + height) {
+      showPriceTooltip(this._soylabBadgeLabel, event);
+    } else {
+      hidePriceTooltip();
+    }
+    return result;
+  };
+  const previousMouseLeave = node.onMouseLeave;
+  node.onMouseLeave = function (...args) {
+    hidePriceTooltip();
+    return previousMouseLeave?.apply(this, args);
+  };
   for (const name of ["model", "service", "service.model", "service.model.version"]) {
     const control = widget(node, name);
     if (!control || control._soylabWatch) continue;

@@ -54,7 +54,7 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "soylab-logo.png",
+        "soylab-reference.png",
         "image"
       ]
     },
@@ -171,7 +171,7 @@
         "",
         "OpenAI GPT Image 2",
         "Comfy",
-        "Change the white background to a deep violet gradient. Preserve every colorful line and the overall shape of the abstract mark.",
+        "Replace the garden background with a soft lavender twilight. Preserve the woman’s face, hairstyle, dress, pose, and photographic realism.",
         "1024x1024",
         "low",
         ""
@@ -180,7 +180,7 @@
         "api_key": "",
         "model": "OpenAI GPT Image 2",
         "model.execution_provider": "Comfy",
-        "model.prompt": "Change the white background to a deep violet gradient. Preserve every colorful line and the overall shape of the abstract mark.",
+        "model.prompt": "Replace the garden background with a soft lavender twilight. Preserve the woman’s face, hairstyle, dress, pose, and photographic realism.",
         "model.resolution": "1024x1024",
         "model.quality": "low",
         "advanced_json": ""
@@ -245,7 +245,7 @@
       "title": "한국어 사용 안내",
       "properties": {},
       "widgets_values": [
-        "# SOYLAB Comfy Router — 이미지 편집 예시\n\n1. [Comfy Developer Platform의 API 키 페이지](https://platform.comfy.org/profile/api-keys?onboarding=router)에 로그인해 개인 API 키를 만듭니다. 같은 워크스페이스의 Billing에서 Comfy 크레딧 잔액을 확인하거나 충전합니다.\n2. 이 저장소를 ComfyUI의 `custom_nodes` 폴더에 설치하고 ComfyUI를 다시 시작합니다.\n3. 키를 노드의 `api_key` 칸에 입력하거나, `API KEY.INI.example`을 `API KEY.INI`로 복사한 뒤 `[comfy_router]` 아래 `api_key = ...`에 저장합니다. 파일 방식이 워크플로를 공유할 때 더 안전합니다.\n4. 이 폴더의 `image_edit_gpt_image_2.json`을 ComfyUI에 드래그해 엽니다. `Load Image` 노드에 원하는 원본 이미지를 업로드합니다. 예시 파일로 `workflows/soylab-sample-image.png`를 사용할 수 있습니다.\n5. Router 노드에서 `OpenAI GPT Image 2`, `Comfy`, `1024x1024`, `low`를 선택합니다. `model.reference_images.image_1`에 이미지가 연결되어 있는지 확인하고 프롬프트를 수정합니다.\n6. **Queue Prompt**를 누르면 크레딧이 과금됩니다. 결과는 `Save Image`와 Router의 `IMAGE` 출력에서 확인합니다. 상단 표시는 예상 요금이고, 실행 뒤에는 응답 헤더의 실제 Comfy 크레딧 사용량을 표시합니다.\n\n**모델**에서 모델 항목을 선택하고, 아래의 **공급자 선택**를 선택합니다. `Comfy`는 기본 실행 경로이며 모델 제작사와 다릅니다. 공식 제공 경로는 [Comfy Router 문서](https://docs.comfy.org/development/comfy-router/providers)에서 확인할 수 있습니다.\n"
+        "# GPT Image 2 이미지 편집 예제\n\n[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [소이랩 유튜브](https://www.youtube.com/@soy_lab) · [소이랩 홈페이지](https://soylab.ai/)\n\n1. **API 키 받기:** [Comfy 개발자 플랫폼의 API 키 페이지](https://platform.comfy.org/profile/api-keys?onboarding=router)에 로그인 → 키 생성 → 같은 워크스페이스에 크레딧 충전.\n2. **키 넣기:** Router 노드 `api_key`에 입력하거나 **API KEY.INI 열기** 버튼으로 개인 키 파일에 저장. 키를 넣은 워크플로는 공유하지 마세요.\n3. **이미지 준비:** `soylab-reference.png`를 ComfyUI `input` 폴더에 복사. 원본 워크플로 메타데이터는 제거했습니다.\n4. **워크플로 열기:** `image_edit_gpt_image_2.json`을 ComfyUI에 드래그. 이미지 로드 → Router `image_1` → 이미지 저장이 연결되어 있습니다.\n5. **실행:** GPT Image 2, `Comfy`, 1024×1024, `low`가 기본값입니다. 프롬프트와 비용을 확인하고 실행하세요. 결과는 ComfyUI `output` 폴더에 저장됩니다.\n\n`Comfy`는 Router의 파트너 모델 기본 실행 경로입니다. 모델 이름의 제작사와 공급자 선택은 다른 개념입니다.\n"
       ],
       "color": "#2A1646",
       "bgcolor": "#1C1030"
@@ -269,7 +269,7 @@
       "title": "English setup & use",
       "properties": {},
       "widgets_values": [
-        "# SOYLAB Comfy Router — image editing example\n\n1. Sign in to the [API keys page in Comfy Developer Platform](https://platform.comfy.org/profile/api-keys?onboarding=router) and create a personal API key. Check or add Comfy credits in the same workspace's Billing section.\n2. Install this repository in your ComfyUI `custom_nodes` folder and restart ComfyUI.\n3. Enter the key in the node's `api_key` field, or copy `API KEY.INI.example` to `API KEY.INI` and set `api_key = ...` under `[comfy_router]`. The file option is safer when sharing workflows.\n4. Drag `image_edit_gpt_image_2.json` from this folder into ComfyUI. Upload any source image in `Load Image`. You can use `workflows/soylab-sample-image.png` as the example input.\n5. In the Router node choose `OpenAI GPT Image 2`, `Comfy`, `1024x1024`, and `low`. Confirm the image is connected to `model.reference_images.image_1`, then edit the prompt.\n6. Click **Queue Prompt** to run the paid request. The result appears at `Save Image` and the Router's `IMAGE` output. The header shows an estimate; after the run it displays actual Comfy credits from the response header.\n\nChoose a model entry, then select the **Provider** below. `Comfy` is the default execution route, distinct from the model maker. See [Comfy Router provider coverage](https://docs.comfy.org/development/comfy-router/providers) for official routes.\n"
+        "# GPT Image 2 image-editing example\n\n[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB website](https://soylab.ai/)\n\n1. **Get an API key:** Sign in to the [Comfy developer API keys page](https://platform.comfy.org/profile/api-keys?onboarding=router) → create a key → add credits to the same workspace.\n2. **Enter the key:** Paste it into Router `api_key`, or use **Open API KEY.INI** to save it in your private key file. Do not share a workflow containing a key.\n3. **Prepare the image:** Copy `soylab-reference.png` into ComfyUI's `input` folder. The source workflow metadata has been removed.\n4. **Open the workflow:** Drag `image_edit_gpt_image_2.json` into ComfyUI. Load Image → Router `image_1` → Save Image are connected.\n5. **Run:** GPT Image 2, `Comfy`, 1024×1024, and `low` are selected. Review the prompt and cost before running. The image is saved in ComfyUI's `output` folder.\n\n`Comfy` is Router's default partner-model serving route. The model maker in the name is different from the selected serving provider.\n"
       ],
       "color": "#2A1646",
       "bgcolor": "#1C1030"
