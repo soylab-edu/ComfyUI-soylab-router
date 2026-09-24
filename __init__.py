@@ -60,7 +60,7 @@ def _media_inputs(spec):
 def _model_inputs(spec):
     route_options = ["Comfy", *ALT_PROVIDERS.get(spec.model_id, ())]
     default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
-    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="Comfy Router에서 실제로 선택 가능한 실행 경로입니다. Comfy가 기본 경로입니다.")]
+    inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="모델명 앞의 제작사와 다른 개념입니다. Comfy Router가 실제 실행에 사용할 공급자이며 Comfy가 기본 경로입니다.")]
     inputs.append(IO.String.Input("prompt", default="", multiline=True, tooltip="생성 또는 편집 프롬프트"))
     if spec.resolutions:
         inputs.append(IO.Combo.Input("resolution", options=list(spec.resolutions), default=spec.resolutions[0], tooltip="모델에서 지원하는 해상도 또는 크기"))

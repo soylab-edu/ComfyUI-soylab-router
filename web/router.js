@@ -459,7 +459,7 @@ function syncVueNode(id) {
           ? `${route} 사전 단가 미공개 · Comfy 기준 약 ${priceText(quote.total)} (선택 경로 요금 아님)`
           : `${route} 사전 단가 미공개 · 공식 가격표 링크는 비용 창에서 확인`;
     const soleRoute = route === "Comfy" && !spec?.alternates?.length;
-    const message = soleRoute ? `${rate} · Router 내 공급자는 Comfy만 지원` : rate;
+    const message = soleRoute ? `${rate} · 이 모델의 대체 실행 경로는 현재 없음` : rate;
     if (hint.textContent !== message) hint.textContent = message;
   }
 
