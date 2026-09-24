@@ -1,6 +1,6 @@
 # SOYLAB Comfy Router
 
-[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB website](https://soylab.ai/)
+[GitHub](https://github.com/soylab-edu/ComfyUI-soylab-router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB website](https://soylab.ai/)
 
 **Languages:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
@@ -12,7 +12,7 @@ This node sends REST requests with Python's standard library. The SDK installati
 
 ## Install
 
-1. Put this repository in `ComfyUI/custom_nodes/soylab_comfy_router` and restart ComfyUI. A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required.
+1. Clone or extract this repository as a real folder at `ComfyUI/custom_nodes/ComfyUI-soylab-router`, then restart ComfyUI. A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required.
 2. Create a key at the [Comfy Developer Platform API keys page](https://platform.comfy.org/profile/api-keys?onboarding=router) and add credits to the workspace if needed.
 3. Enter the key in the node's `api_key` field **or** use its local key-file button. When `API KEY.INI` is absent, the button says **Create INI file and enter key**; when present, it says **Open API KEY.INI**. Clicking it creates a private blank file if needed and opens it in the operating system's text editor. The status check returns only whether the file exists, never its contents. You can also copy `API KEY.INI.example` manually. `API KEY.INI` is ignored by Git. A key typed into a node may be saved in a workflow export, so clear that field and use the INI file for shared workflows.
 4. Add **SOYLAB Comfy Router** from **Soylab / Comfy Router**. Choose a model, an available Router provider, resolution and any references. Connect the active `IMAGE`, `VIDEO` or `AUDIO` output to a save node, then queue the workflow.

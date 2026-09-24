@@ -1,6 +1,6 @@
 # SOYLAB Comfy Router
 
-[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB 公式サイト](https://soylab.ai/)
+[GitHub](https://github.com/soylab-edu/ComfyUI-soylab-router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB 公式サイト](https://soylab.ai/)
 
 **言語:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
@@ -12,7 +12,7 @@ Python 標準ライブラリから Router REST API を直接呼び出すため�
 
 ## インストールと API キー
 
-1. このリポジトリを `ComfyUI/custom_nodes/soylab_comfy_router` に置き、ComfyUI を再起動します。V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。
+1. このリポジトリを `ComfyUI/custom_nodes/ComfyUI-soylab-router` に実フォルダーとしてクローンまたは展開し、ComfyUI を再起動します。V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。
 2. [Comfy 開発者プラットフォーム](https://platform.comfy.org/profile/api-keys?onboarding=router)でワークスペースの API キーを作成し、必要に応じてクレジットを追加します。
 3. ノードの `api_key` 欄に入力するか、INI ボタンで OS のテキストエディターから `API KEY.INI` を編集します。ファイルがなければボタンは **INI ファイルを作成してキーを入力**、あれば **API KEY.INI を開く** と表示されます。ボタンはファイルを作成・開くだけで、キーの内容をブラウザーに返しません。このファイルは Git から除外されています。共有するワークフローでは、保存され得るノード入力欄より INI ファイルの使用を推奨します。
 4. **Soylab / Comfy Router → SOYLAB Comfy Router** を追加し、モデル、プロバイダー、タスクモード、出力設定を選びます。有効な画像・動画・音声出力を保存ノードにつなぎ、実行します。

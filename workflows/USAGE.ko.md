@@ -1,6 +1,6 @@
 # Seedance 2.5 예제 사용법
 
-[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [소이랩 유튜브](https://www.youtube.com/@soy_lab) · [소이랩 홈페이지](https://soylab.ai/)
+[GitHub](https://github.com/soylab-edu/ComfyUI-soylab-router) · [소이랩 유튜브](https://www.youtube.com/@soy_lab) · [소이랩 홈페이지](https://soylab.ai/)
 
 1. **API 키 받기:** [Comfy 개발자 플랫폼의 API 키 페이지](https://platform.comfy.org/profile/api-keys?onboarding=router)에 로그인 → API 키 생성 → 같은 워크스페이스에 크레딧 충전.
 2. **키 넣기:** Router 노드의 `api_key`에 입력하거나 **API KEY.INI 열기** 버튼으로 개인 키 파일에 저장. 키를 넣은 워크플로는 공유하지 마세요.

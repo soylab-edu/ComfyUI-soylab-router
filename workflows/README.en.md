@@ -1,6 +1,6 @@
 # GPT Image 2 image-editing example
 
-[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB website](https://soylab.ai/)
+[GitHub](https://github.com/soylab-edu/ComfyUI-soylab-router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB website](https://soylab.ai/)
 
 1. **Get an API key:** Sign in to the [Comfy developer API keys page](https://platform.comfy.org/profile/api-keys?onboarding=router) → create a key → add credits to the same workspace.
 2. **Enter the key:** Paste it into Router `api_key`, or use **Open API KEY.INI** to save it in your private key file. Do not share a workflow containing a key.

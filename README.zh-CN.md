@@ -1,6 +1,6 @@
 # SOYLAB Comfy Router
 
-[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB 官网](https://soylab.ai/)
+[GitHub](https://github.com/soylab-edu/ComfyUI-soylab-router) · [SOYLAB YouTube](https://www.youtube.com/@soy_lab) · [SOYLAB 官网](https://soylab.ai/)
 
 **语言：** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
@@ -12,7 +12,7 @@
 
 ## 安装与 API 密钥
 
-1. 将本仓库放入 `ComfyUI/custom_nodes/soylab_comfy_router`，然后重启 ComfyUI。需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本。
+1. 将本仓库克隆或解压为 `ComfyUI/custom_nodes/ComfyUI-soylab-router` 中的真实文件夹，然后重启 ComfyUI。需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本。
 2. 在 [Comfy 开发者平台](https://platform.comfy.org/profile/api-keys?onboarding=router)创建工作区 API 密钥，并按需充值。
 3. 可在节点的 `api_key` 输入密钥，也可点击 INI 按钮，在操作系统的文本编辑器中填写 `API KEY.INI`。文件不存在时，按钮显示 **创建 INI 文件并输入密钥**；已存在时显示 **打开 API KEY.INI**。按钮只创建或打开文件，不会把文件内容返回浏览器。该文件已被 Git 忽略。共享工作流时，建议使用 INI 文件，因为节点输入中的密钥可能保存在工作流导出文件中。
 4. 从 **Soylab / Comfy Router → SOYLAB Comfy Router** 添加节点，选择模型、服务商、任务模式及输出设置。将启用的图像、视频或音频输出连接到保存节点，然后运行工作流。

@@ -1,6 +1,6 @@
 # SOYLAB Comfy Router
 
-[GitHub](https://github.com/soylab-edu/soylab_comfy_router) · [소이랩 유튜브](https://www.youtube.com/@soy_lab) · [소이랩 홈페이지](https://soylab.ai/)
+[GitHub](https://github.com/soylab-edu/ComfyUI-soylab-router) · [소이랩 유튜브](https://www.youtube.com/@soy_lab) · [소이랩 홈페이지](https://soylab.ai/)
 
 **언어:** [한국어](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)
 
@@ -12,7 +12,7 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 
 ## 설치와 API 키
 
-1. 이 저장소를 `ComfyUI/custom_nodes/soylab_comfy_router`에 두고 ComfyUI를 재시작합니다. V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다.
+1. 이 저장소를 `ComfyUI/custom_nodes/ComfyUI-soylab-router`에 실제 폴더로 클론하거나 압축 해제하고 ComfyUI를 재시작합니다. V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다.
 2. [Comfy 개발자 플랫폼](https://platform.comfy.org/profile/api-keys?onboarding=router)에서 워크스페이스 API 키를 만들고 필요한 크레딧을 충전합니다.
 3. 노드의 `api_key`에 키를 넣거나, 노드의 INI 버튼을 눌러 운영체제 편집기에서 `API KEY.INI`를 작성합니다. 파일이 없으면 버튼이 **INI 파일 생성 및 키 입력하기**, 있으면 **API KEY.INI 열기**로 표시됩니다. 버튼은 파일을 만들거나 열지만 키 내용은 브라우저로 보내지 않습니다. `API KEY.INI`는 Git에서 제외됩니다. 공유할 워크플로에는 키가 저장될 수 있는 노드 입력 대신 INI 파일을 사용하세요.
 4. **Soylab / Comfy Router → SOYLAB Comfy Router**를 추가하고 모델·공급자·작업 모드·출력 설정을 고릅니다. 활성화된 이미지·비디오·오디오 출력을 저장 노드에 연결한 뒤 실행합니다.
