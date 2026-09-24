@@ -73,8 +73,18 @@ function routeResolutionNote(spec, route, resolution) {
 
 function directReference(node, spec, route) {
   const entry = pricing.models?.[spec?.model_id]?.[route];
-  const framesConnected = node.inputs?.some((input) => (input.name === `${inputPrefix(node)}.first_frame` || input.name === `${inputPrefix(node)}.last_frame`) && input.link != null);
-  if (!entry || field(node, "mode") === "edit" || framesConnected || refCount(node, "images") || refCount(node, "videos") || refCount(node, "audios") || entry.reference_inputs !== false) return null;
+  if (!entry || field(node, "mode") === "edit" || field(node, "mode") === "extend") return null;
+  const firstFrame = !!node.inputs?.some((input) => input.name === `${inputPrefix(node)}.first_frame` && input.link != null);
+  const lastFrame = !!node.inputs?.some((input) => input.name === `${inputPrefix(node)}.last_frame` && input.link != null);
+  const images = refCount(node, "images");
+  const videos = refCount(node, "videos");
+  const audios = refCount(node, "audios");
+  const allowed = entry.reference_inputs;
+  if (allowed === false) {
+    if (firstFrame || lastFrame || images || videos || audios) return null;
+  } else if (!allowed || images + Number(firstFrame) + Number(lastFrame) > allowed.images || videos > allowed.videos || audios > allowed.audios || (lastFrame && !allowed.last_frame)) {
+    return null;
+  }
   const duration = Number(field(node, "duration", 0));
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", ""));
@@ -91,7 +101,7 @@ function directReference(node, spec, route) {
   const credits = (value) => (value * COMFY_CREDITS_PER_USD).toFixed(1);
   const creditRateText = `${credits(range[0])}${range[0] === range[1] ? "" : `–${credits(range[1])}`} C`;
   const creditTotalText = `${credits(range[0] * duration)}${range[0] === range[1] ? "" : `–${credits(range[1] * duration)}`} C`;
-  return { rateText, totalText, creditRateText, creditTotalText, rangeScope: entry.range_scope || "", source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
+  return { rateText, totalText, creditRateText, creditTotalText, duration, rangeScope: entry.range_scope || "", source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
 }
 
 function directResolutionNotice(node, spec, route) {
@@ -225,7 +235,7 @@ function estimate(node, spec) {
     comfyText = `${execution} 최근 실측 ${observed.credits.toFixed(1)} C`;
   } else if (execution !== "Comfy") {
     comfyText = directRef
-      ? `${execution} ${directRef.rangeScope ? "공개 범위 환산" : "직결가 환산 약"} ${directRef.creditRateText}/초`
+      ? `${execution} 직결 API 참고 총 약 ${directRef.creditTotalText}/${directRef.duration}초`
       : resolutionNotice || `${execution} Router 사전 단가 미공개`;
   } else if (quote) {
     const low = quote.total.toFixed(1);
@@ -259,7 +269,7 @@ function refreshPricePopup() {
   const duration = Number(field(node, "duration", 5));
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", ""));
-  const signature = JSON.stringify([spec?.model_id, route, duration, resolution, ratio, field(node, "mode", ""), refCount(node, "videos"), node.properties?.soylabActualCredits, directRef?.rateText]);
+  const signature = JSON.stringify([priceSignature(node, spec || {}, route), node.properties?.soylabActualCredits, directRef?.rateText]);
   if (pricePopup.dataset.signature === signature) return;
   pricePopup.dataset.signature = signature;
   pricePopup.replaceChildren();
@@ -288,7 +298,7 @@ function refreshPricePopup() {
   const selectedRate = route !== "Comfy" && observed
     ? `최근 같은 설정 ${priceText(observed.credits)}`
     : route !== "Comfy" && directRef
-      ? `${directRef.rangeScope || "직결가"} ${directRef.totalText} · ${directRef.rangeScope ? "범위 환산" : "직결가 환산 약"} ${directRef.creditTotalText}`
+      ? `외부 직접 API 참고 ${directRef.totalText} · 환산 약 ${directRef.creditTotalText} (Router 실제 청구액 아님)`
     : resolutionNotice
       ? resolutionNotice
     : route === "Comfy" && Number.isFinite(quote?.perSecond)
@@ -304,7 +314,7 @@ function refreshPricePopup() {
   const table = document.createElement("table");
   const head = document.createElement("thead");
   const headRow = document.createElement("tr");
-  for (const label of ["Router 공급자", "공개 참고 가격", "Router 비용/실측"]) headRow.append(line("th", "", label));
+  for (const label of ["Router 공급자", "공개 참고 가격", "Router 실측 / 참고 환산"]) headRow.append(line("th", "", label));
   head.append(headRow);
   table.append(head);
   const body = document.createElement("tbody");
@@ -320,7 +330,7 @@ function refreshPricePopup() {
     const rate = known && Number.isFinite(quote.perSecond) ? `Comfy ${priceText(quote.perSecond)}/초` : estimated ? `Comfy 약 ${priceText(estimateInfo.estimatedCredits)}/회` : outside ? `${outside.rangeScope || "직결"} ${outside.rateText}/초 · ${outside.totalText} 참고` : outsideNotice || "공개 참고 없음";
     const total = known
       ? quote.maxTotal == null ? `약 ${priceText(quote.total)}` : `약 ${priceText(quote.total)}–${priceText(quote.maxTotal)}`
-      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : outside ? `${outside.rangeScope ? "공개 범위 환산" : "직결가 환산 약"} ${outside.creditTotalText}` : "사전 요금 미공개";
+      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : outside ? `직결 API 환산 참고 약 ${outside.creditTotalText}` : "사전 요금 미공개";
     row.append(line("td", "", provider));
     const rateCell = line("td", "", rate);
     const noteSource = routeResolutionNote(spec, provider, resolution)?.source;
@@ -458,9 +468,9 @@ function syncVueNode(id) {
   if (badge.textContent !== label) badge.textContent = label;
   const selectedRoute = String(field(node, "execution_provider", "Comfy"));
   const selectedReference = selectedRoute === "Comfy" ? null : directReference(node, spec, selectedRoute);
-  badge.title = price.comfy.includes("공개 범위 환산")
+  badge.title = selectedReference?.rangeScope
     ? `${selectedReference?.rangeScope || "공개 가격 범위"}입니다. 선택한 해상도의 확정 단가가 아닙니다. 실제 Router 청구액은 실행 후 확인하세요.`
-    : price.comfy.includes("직결가 환산")
+    : selectedReference
       ? `외부 직접 API 가격을 $1 = ${COMFY_CREDITS_PER_USD} Comfy 크레딧으로 환산한 참고값입니다. 실제 Router 청구액은 실행 후 확인하세요.`
       : "Router 실행 공급자별 비용 비교 열기";
 
@@ -484,7 +494,7 @@ function syncVueNode(id) {
       : route !== "Comfy" && observed
         ? `${route} 최근 같은 설정 ${priceText(observed.credits)} · 사전 단가는 미공개`
         : route !== "Comfy" && directRef
-          ? `${route} ${directRef.rangeScope || "직결"} ${directRef.rateText}/초 · ${directRef.rangeScope ? "범위 환산" : "직결가 환산 약"} ${directRef.creditRateText}/초`
+          ? `${route} 외부 직접 API ${directRef.rateText}/초 · ${directRef.duration}초 참고 총 약 ${directRef.creditTotalText} (Router 실제 청구액은 실행 후 확인)`
         : resolutionNotice
           ? `${resolutionNotice} · Router 실제 요금은 실행 후 확인`
         : route !== "Comfy" && quote

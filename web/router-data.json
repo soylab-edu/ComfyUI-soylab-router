@@ -309,7 +309,12 @@
               "720p": 0.2304,
               "1080p": 0.61354
             },
-            "reference_inputs": false,
+            "reference_inputs": {
+              "images": 1,
+              "videos": 0,
+              "audios": 0,
+              "last_frame": false
+            },
             "source": "https://runware.ai/seedance-2-5",
             "checked_at": "2026-09-24"
           },

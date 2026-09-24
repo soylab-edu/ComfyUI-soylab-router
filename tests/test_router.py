@@ -60,7 +60,11 @@ class CatalogTests(unittest.TestCase):
                 self.assertIn(name, ALT_PROVIDERS.get(model_id, ()))
                 self.assertTrue(entry["source"].startswith("https://"))
                 self.assertLessEqual(entry["checked_at"], data["updated_at"])
-                self.assertIs(entry["reference_inputs"], False)
+                references = entry["reference_inputs"]
+                if references is not False:
+                    self.assertEqual(name, "runware")
+                    self.assertEqual(model_id, "byteplus/dreamina-seedance-2-5-260628")
+                    self.assertEqual(references, {"images": 1, "videos": 0, "audios": 0, "last_frame": False})
                 self.assertTrue(set(entry.get("priced_resolutions", ())).issubset(BY_ID[model_id].resolutions))
                 if "range_scope" in entry:
                     self.assertIn("range", entry)
