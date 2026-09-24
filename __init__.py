@@ -22,6 +22,26 @@ from .router import RouterError, download_asset, run_model, upload_asset
 WEB_DIRECTORY = "./web"
 ROOT = Path(__file__).resolve().parent
 _ROUTES_REGISTERED = False
+_STAGE_TEXT = {
+    "preparing": "입력 준비 중",
+    "uploading": "참조 파일 전송 중",
+    "submitting": "Router 서버에 요청 전송 중",
+    "queued": "Router에 전달 완료 · 대기 중",
+    "generating": "공급자에서 생성 중",
+    "sync_waiting": "공급자 응답 대기 중",
+    "collecting": "생성 완료 · 결과 수신 중",
+    "downloading": "결과 파일 다운로드 중",
+    "completed": "완료",
+    "failed": "오류 · 실행 기록 확인",
+}
+
+
+def _report_progress(server, node_id, stage, **details):
+    server.send_sync("soylab_router_status", {"node_id": node_id, "stage": stage, **details})
+    message = _STAGE_TEXT.get(stage, stage)
+    if stage == "queued" and isinstance(details.get("queue_position"), int):
+        message += f" · 앞에 {details['queue_position']}건"
+    server.send_progress_text(f"SOYLAB Router · {message}", node_id)
 
 
 def _register_routes():
@@ -31,15 +51,24 @@ def _register_routes():
     from aiohttp import web
     from server import PromptServer
 
-    @PromptServer.instance.routes.post("/soylab_router/open_api_key")
-    async def open_api_key(request):
+    def local_request(request):
         try:
             local = ipaddress.ip_address(request.remote).is_loopback
         except (TypeError, ValueError):
             local = False
         origin = request.headers.get("Origin")
         site = request.headers.get("Sec-Fetch-Site")
-        if not local or (origin and urlsplit(origin).netloc != request.host) or site not in (None, "same-origin", "none"):
+        return local and (not origin or urlsplit(origin).netloc == request.host) and site in (None, "same-origin", "none")
+
+    @PromptServer.instance.routes.get("/soylab_router/api_key_file_status")
+    async def api_key_file_status(request):
+        if not local_request(request):
+            return web.json_response({"error": "로컬 ComfyUI 창에서만 사용할 수 있습니다."}, status=403)
+        return web.json_response({"exists": (ROOT / "API KEY.INI").is_file()})
+
+    @PromptServer.instance.routes.post("/soylab_router/open_api_key")
+    async def open_api_key(request):
+        if not local_request(request):
             return web.json_response({"error": "로컬 ComfyUI 창에서만 사용할 수 있습니다."}, status=403)
         try:
             open_key_file(ROOT / "API KEY.INI")
@@ -166,7 +195,7 @@ class SoylabComfyRouter(IO.ComfyNode):
 
         node_id = str(cls.hidden.unique_id)
         def report(stage, **details):
-            PromptServer.instance.send_sync("soylab_router_status", {"node_id": node_id, "stage": stage, **details})
+            _report_progress(PromptServer.instance, node_id, stage, **details)
 
         report("preparing")
         try:
@@ -209,7 +238,7 @@ class SoylabComfyRouter(IO.ComfyNode):
                 audio = audio_from_bytes(data)
         if reference is None:
             raise RouterError("Router가 완료 응답을 보냈지만 결과 미디어를 찾지 못했습니다. RAW JSON 확인이 필요합니다.")
-        credits_text = f"{actual_credits:g} credits" if actual_credits is not None else "응답에 과금 정보 없음"
+        credits_text = f"사용 크레딧 {actual_credits:g} C" if actual_credits is not None else "사용 크레딧 확인 불가 · Comfy Credit History 확인"
         cost_text = f"{spec.model_id} · {provider} · {credits_text}"
         raw = json.dumps(result, ensure_ascii=False, indent=2)
         report("completed")

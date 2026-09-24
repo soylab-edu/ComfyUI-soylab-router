@@ -5,9 +5,9 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 import urllib.error
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from soylab_comfy_router import SoylabComfyRouter, _register_routes, _selection
+from soylab_comfy_router import SoylabComfyRouter, _register_routes, _report_progress, _selection
 from soylab_comfy_router.catalog import ALT_PROVIDERS, BY_ID, BY_LABEL, MODELS, find_model
 from soylab_comfy_router.key_editor import open_key_file
 from soylab_comfy_router.payload import build_payload
@@ -214,6 +214,14 @@ class WorkflowTests(unittest.TestCase):
 
 
 class KeyEditorTests(unittest.TestCase):
+    def test_progress_uses_native_partner_node_message_channel(self):
+        server = SimpleNamespace(send_sync=Mock(), send_progress_text=Mock())
+        _report_progress(server, "14", "submitting")
+        server.send_progress_text.assert_called_with("SOYLAB Router · Router 서버에 요청 전송 중", "14")
+        _report_progress(server, "14", "queued", request_id="request-1", queue_position=2)
+        server.send_progress_text.assert_called_with("SOYLAB Router · Router에 전달 완료 · 대기 중 · 앞에 2건", "14")
+        server.send_sync.assert_called_with("soylab_router_status", {"node_id": "14", "stage": "queued", "request_id": "request-1", "queue_position": 2})
+
     def test_creates_private_blank_ini_without_overwriting_existing_key(self):
         with tempfile.TemporaryDirectory() as temp:
             path = pathlib.Path(temp) / "API KEY.INI"
@@ -231,11 +239,13 @@ class KeyEditorTests(unittest.TestCase):
 
         handlers = {}
         class Routes:
-            def post(self, path):
+            def register(self, path):
                 def register(handler):
                     handlers[path] = handler
                     return handler
                 return register
+            get = register
+            post = register
         fake_server = SimpleNamespace(routes=Routes())
         with patch.object(server.PromptServer, "instance", fake_server, create=True), patch("soylab_comfy_router._ROUTES_REGISTERED", False):
             _register_routes()
@@ -243,9 +253,14 @@ class KeyEditorTests(unittest.TestCase):
         foreign = SimpleNamespace(remote="127.0.0.1", host="127.0.0.1:8000", headers={"Origin": "https://another.example"})
         remote = SimpleNamespace(remote="192.0.2.1", host="127.0.0.1:8000", headers={"Origin": "http://127.0.0.1:8000"})
         local = SimpleNamespace(remote="127.0.0.1", host="127.0.0.1:8000", headers={"Origin": "http://127.0.0.1:8000"})
-        with patch("soylab_comfy_router.open_key_file") as open_file:
+        status = handlers["/soylab_router/api_key_file_status"]
+        with tempfile.TemporaryDirectory() as temp, patch("soylab_comfy_router.ROOT", pathlib.Path(temp)), patch("soylab_comfy_router.open_key_file") as open_file:
             self.assertEqual(asyncio.run(handler(foreign)).status, 403)
             self.assertEqual(asyncio.run(handler(remote)).status, 403)
+            self.assertEqual(asyncio.run(status(foreign)).status, 403)
+            self.assertEqual(json.loads(asyncio.run(status(local)).text), {"exists": False})
+            (pathlib.Path(temp) / "API KEY.INI").write_text("[comfy_router]\napi_key = private-key\n", encoding="utf-8")
+            self.assertEqual(json.loads(asyncio.run(status(local)).text), {"exists": True})
             self.assertEqual(asyncio.run(handler(local)).status, 200)
         open_file.assert_called_once()
 

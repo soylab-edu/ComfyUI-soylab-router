@@ -9,19 +9,8 @@ const HEADER_GRADIENT = `linear-gradient(90deg, ${HEADER_PURPLE} 0%, #3D6574 50%
 const BODY_BG = "#1E1B25";
 const FOOTER_BG = "#28173E";
 const COST_BUTTON_BG = "#422670";
-const STATUS_LABELS = {
-  preparing: "입력 준비 중", uploading: "참조 파일 전송 중", submitting: "Router에 요청 전송 중",
-  queued: "Router 전달 완료 · 대기 중", generating: "공급자 생성 중", sync_waiting: "공급자 응답 대기 중",
-  collecting: "완료 · 결과 수신 중", downloading: "완료 · 파일 다운로드 중",
-  completed: "완료", failed: "오류 · 실행 기록 확인",
-};
-
-function statusText(node) {
-  const item = node._soylabStatus;
-  if (!item) return "";
-  const queue = item.stage === "queued" && Number.isInteger(item.queue_position) ? ` · 앞에 ${item.queue_position}건` : "";
-  return `${STATUS_LABELS[item.stage] || item.stage}${queue}`;
-}
+const KEY_BUTTON_EXISTS = "API KEY.INI 열기";
+const KEY_BUTTON_MISSING = "INI 파일 생성 및 키 입력하기";
 let COMFY_CREDITS_PER_USD = NaN;
 const PRICE_HISTORY_KEY = "soylab.router.priceHistory.v1";
 const logo = new Image();
@@ -33,9 +22,13 @@ logo.onload = () => app.graph?.setDirtyCanvas?.(true, true);
 let catalog = [];
 let pricing = { models: {} };
 let priceHistory = [];
+let keyFileExists = null;
 try {
   const saved = JSON.parse(localStorage.getItem(PRICE_HISTORY_KEY) || "[]");
-  if (Array.isArray(saved)) priceHistory = saved;
+  if (Array.isArray(saved)) {
+    priceHistory = saved.filter((entry) => typeof entry?.signature === "string" && Number.isFinite(Number(entry.credits)) && Number(entry.credits) > 0);
+    if (priceHistory.length !== saved.length) localStorage.setItem(PRICE_HISTORY_KEY, JSON.stringify(priceHistory));
+  }
 } catch (_) {}
 
 function priceSignature(node, spec, route) {
@@ -52,11 +45,11 @@ function priceSignature(node, spec, route) {
 
 function observedCost(node, spec, route) {
   if (!spec) return null;
-  return priceHistory.find((entry) => entry.signature === priceSignature(node, spec, route)) || null;
+  return priceHistory.find((entry) => entry.signature === priceSignature(node, spec, route) && Number(entry.credits) > 0) || null;
 }
 
 function rememberCost(node, spec, route, credits) {
-  if (!spec || !Number.isFinite(Number(credits))) return;
+  if (!spec || credits == null || !Number.isFinite(Number(credits)) || Number(credits) <= 0) return;
   const signature = priceSignature(node, spec, route);
   priceHistory = [{ signature, credits: Number(credits), at: Date.now() },
     ...priceHistory.filter((entry) => entry.signature !== signature)].slice(0, 40);
@@ -130,6 +123,34 @@ fetch(new URL("./router-data.json", import.meta.url), { cache: "no-store" })
 
 function widget(node, name) {
   return node.widgets?.find((item) => item.name === name) ?? null;
+}
+
+function keyButtonLabel() {
+  return keyFileExists === false ? KEY_BUTTON_MISSING : KEY_BUTTON_EXISTS;
+}
+
+function syncKeyButtons() {
+  for (const node of app.graph?._nodes || []) {
+    if (node.type !== NODE_ID) continue;
+    const button = node.widgets?.find((item) => item._soylabKeyButton);
+    if (button && button.name !== keyButtonLabel()) {
+      button.name = keyButtonLabel();
+      node.setDirtyCanvas?.(true, true);
+    }
+    queueVueSync(node.id);
+  }
+}
+
+async function refreshKeyFileStatus() {
+  try {
+    const response = await fetch(api.apiURL("/soylab_router/api_key_file_status"), { cache: "no-store" });
+    if (!response.ok) return;
+    const status = await response.json();
+    if (typeof status.exists === "boolean" && keyFileExists !== status.exists) {
+      keyFileExists = status.exists;
+      syncKeyButtons();
+    }
+  } catch (_) {}
 }
 
 function modelLabel(spec) {
@@ -229,10 +250,14 @@ function estimate(node, spec) {
   const observed = observedCost(node, spec, execution);
   const directRef = execution === "Comfy" ? null : directReference(node, spec, execution);
   const resolutionNotice = execution === "Comfy" ? "" : directResolutionNotice(node, spec, execution);
+  const sameRunWithoutCredits = actual == null && node.properties?.soylabActualSignature === priceSignature(node, spec, execution)
+    && node.properties?.soylabActualModel === spec.model_id && node.properties?.soylabActualProvider === execution;
   if (actual != null && Number.isFinite(Number(actual)) && node.properties?.soylabActualSignature === priceSignature(node, spec, execution)) {
-    comfyText = `Comfy 실제 ${Number(actual).toFixed(2)} C`;
+    comfyText = `사용 크레딧 ${Number(actual).toFixed(2)} C`;
+  } else if (sameRunWithoutCredits) {
+    comfyText = `${execution} 사용 크레딧: Credit History 확인`;
   } else if (execution !== "Comfy" && observed) {
-    comfyText = `${execution} 최근 실측 ${observed.credits.toFixed(1)} C`;
+    comfyText = `${execution} 최근 사용 크레딧 ${observed.credits.toFixed(1)} C`;
   } else if (execution !== "Comfy") {
     comfyText = directRef
       ? `${execution} 직결 API 참고 총 약 ${directRef.creditTotalText}/${directRef.duration}초`
@@ -269,6 +294,13 @@ function refreshPricePopup() {
   const duration = Number(field(node, "duration", 5));
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", ""));
+  const sameRunWithoutCredits = node.properties?.soylabActualCredits == null
+    && node.properties?.soylabActualSignature === priceSignature(node, spec || {}, route)
+    && node.properties?.soylabActualModel === spec?.model_id && node.properties?.soylabActualProvider === route;
+  const actualCredits = node.properties?.soylabActualCredits;
+  const actualForSelection = actualCredits != null && Number.isFinite(Number(actualCredits))
+    && node.properties?.soylabActualSignature === priceSignature(node, spec || {}, route)
+    && node.properties?.soylabActualModel === spec?.model_id && node.properties?.soylabActualProvider === route;
   const signature = JSON.stringify([priceSignature(node, spec || {}, route), node.properties?.soylabActualCredits, directRef?.rateText]);
   if (pricePopup.dataset.signature === signature) return;
   pricePopup.dataset.signature = signature;
@@ -295,8 +327,12 @@ function refreshPricePopup() {
   pricePopup.append(line("div", "soylab-price-model", modelLabel(spec)));
   const settings = [resolution, spec.output === "VIDEO" ? `${duration}초` : "", ratio].filter(Boolean).join(" · ");
   if (settings) pricePopup.append(line("div", "soylab-price-settings", settings));
-  const selectedRate = route !== "Comfy" && observed
-    ? `최근 같은 설정 ${priceText(observed.credits)}`
+  const selectedRate = actualForSelection
+    ? `이번 실행 사용 크레딧 ${priceText(Number(actualCredits))}`
+    : sameRunWithoutCredits
+    ? "이번 실행 사용 크레딧: Router 응답에 없음 · Comfy Credit History 확인"
+    : route !== "Comfy" && observed
+    ? `최근 사용 크레딧 ${priceText(observed.credits)}`
     : route !== "Comfy" && directRef
       ? `외부 직접 API 참고 ${directRef.totalText} · 환산 약 ${directRef.creditTotalText} (Router 실제 청구액 아님)`
     : resolutionNotice
@@ -314,7 +350,7 @@ function refreshPricePopup() {
   const table = document.createElement("table");
   const head = document.createElement("thead");
   const headRow = document.createElement("tr");
-  for (const label of ["Router 공급자", "공개 참고 가격", "Router 실측 / 참고 환산"]) headRow.append(line("th", "", label));
+  for (const label of ["Router 공급자", "공개 참고 가격", "사용 크레딧 / 참고 환산"]) headRow.append(line("th", "", label));
   head.append(headRow);
   table.append(head);
   const body = document.createElement("tbody");
@@ -330,7 +366,7 @@ function refreshPricePopup() {
     const rate = known && Number.isFinite(quote.perSecond) ? `Comfy ${priceText(quote.perSecond)}/초` : estimated ? `Comfy 약 ${priceText(estimateInfo.estimatedCredits)}/회` : outside ? `${outside.rangeScope || "직결"} ${outside.rateText}/초 · ${outside.totalText} 참고` : outsideNotice || "공개 참고 없음";
     const total = known
       ? quote.maxTotal == null ? `약 ${priceText(quote.total)}` : `약 ${priceText(quote.total)}–${priceText(quote.maxTotal)}`
-      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : outside ? `직결 API 환산 참고 약 ${outside.creditTotalText}` : "사전 요금 미공개";
+      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 사용 크레딧 ${priceText(recent.credits)}` : outside ? `직결 API 환산 참고 약 ${outside.creditTotalText}` : "사전 요금 미공개";
     row.append(line("td", "", provider));
     const rateCell = line("td", "", rate);
     const noteSource = routeResolutionNote(spec, provider, resolution)?.source;
@@ -350,9 +386,9 @@ function refreshPricePopup() {
   pricePopup.append(table);
   const actual = node.properties?.soylabActualCredits;
   if (actual != null && node.properties?.soylabActualSignature === priceSignature(node, spec, route)) {
-    pricePopup.append(line("div", "soylab-price-actual", `최근 실행 실제 사용량: ${priceText(Number(actual))}`));
+    pricePopup.append(line("div", "soylab-price-actual", `이번 실행 사용 크레딧: ${priceText(Number(actual))}`));
   }
-  pricePopup.append(line("p", "soylab-price-note", `직결 USD 가격은 각 업체 API 페이지를 ${pricing.updated_at || "최근"}에 확인해 Git에 기록했습니다. 직결가 환산 크레딧은 $1 = ${COMFY_CREDITS_PER_USD} C 기준의 참고값이며 Router의 실제 청구액을 보장하지 않습니다. Comfy 기본 경로는 공식 Partner Node 가격표의 참고값입니다. Router는 다른 공급자의 사전 요금을 공개하지 않습니다. 최근 실측은 이 브라우저의 이전 실행 기록이며 입력 내용에 따라 달라질 수 있습니다.`));
+  pricePopup.append(line("p", "soylab-price-note", `직결 USD 가격은 각 업체 API 페이지를 ${pricing.updated_at || "최근"}에 확인해 Git에 기록했습니다. 직결가 환산 크레딧은 $1 = ${COMFY_CREDITS_PER_USD} C 기준의 참고값이며 Router의 실제 청구액을 보장하지 않습니다. Comfy 기본 경로는 공식 Partner Node 가격표의 참고값입니다. Router는 다른 공급자의 사전 요금을 공개하지 않습니다. 최근 사용 크레딧은 Router 응답에 값이 있던 이전 실행 기록이며 입력 내용에 따라 달라질 수 있습니다.`));
   if (directRef?.note) pricePopup.append(line("p", "soylab-price-note", `${route} 참고 가격은 제공 페이지 내부의 표기 차이가 있어 범위로 표시합니다.`));
   const pricingLink = document.createElement("a");
   pricingLink.href = "https://docs.comfy.org/tutorials/partner-nodes/pricing";
@@ -414,24 +450,11 @@ function syncVueNode(id) {
   host.querySelector('[data-testid="advanced-inputs-button"]')?.style.setProperty("background-color", FOOTER_BG, "important");
   const costButton = [...host.querySelectorAll("button")].find((button) => button.textContent.trim() === "Router 공급자별 비용 확인");
   costButton?.classList.add("soylab-cost-button");
-  const keyButton = [...host.querySelectorAll("button")].find((button) => button.textContent.trim() === "API KEY.INI 열기");
-  keyButton?.classList.add("soylab-key-button");
-  if (costButton) {
-    let status = host.querySelector(".soylab-run-status");
-    if (!status) {
-      status = document.createElement("div");
-      status.className = "soylab-run-status";
-      status.setAttribute("role", "status");
-    }
-    const widgetRows = [...host.querySelectorAll(".lg-node-widget")];
-    const lastWidget = widgetRows.at(-1);
-    if (lastWidget && status.previousElementSibling !== lastWidget) lastWidget.after(status);
-    const message = statusText(node);
-    if (status && status.textContent !== message) status.textContent = message;
-    if (status) status.hidden = !message;
-    if (status) status.title = node._soylabStatus?.request_id ? `Router request_id: ${node._soylabStatus.request_id}` : "";
+  const keyButton = host.querySelector("button.soylab-key-button") || [...host.querySelectorAll("button")].find((button) => [KEY_BUTTON_EXISTS, KEY_BUTTON_MISSING].includes(button.textContent.trim()));
+  if (keyButton) {
+    keyButton.classList.add("soylab-key-button");
+    if (keyButton.textContent.trim() !== keyButtonLabel()) keyButton.textContent = keyButtonLabel();
   }
-
   const title = header.querySelector('[data-testid="node-title"]');
   if (title) {
     title.style.setProperty("color", "#fff", "important");
@@ -489,12 +512,17 @@ function syncVueNode(id) {
     const observed = observedCost(node, spec, route);
     const directRef = directReference(node, spec, route);
     const resolutionNotice = directResolutionNotice(node, spec, route);
-    const rate = route === "Comfy" && Number.isFinite(quote?.perSecond)
-      ? `Comfy 예상 ${priceText(quote.perSecond)}/초 · 자세한 비용은 위 가격 버튼`
+    const sameRunWithoutCredits = node.properties?.soylabActualCredits == null
+      && node.properties?.soylabActualSignature === priceSignature(node, spec || {}, route)
+      && node.properties?.soylabActualModel === spec?.model_id && node.properties?.soylabActualProvider === route;
+    const rate = sameRunWithoutCredits
+      ? `${route} 사용 크레딧: Router 응답에 없음 · Comfy Credit History 확인`
+      : route === "Comfy" && Number.isFinite(quote?.perSecond)
+        ? `Comfy 예상 ${priceText(quote.perSecond)}/초 · 자세한 비용은 위 가격 버튼`
       : route === "Comfy" && quote
         ? `Comfy 예상 ${priceText(quote.total)}/회 · 자세한 비용은 위 가격 버튼`
       : route !== "Comfy" && observed
-        ? `${route} 최근 같은 설정 ${priceText(observed.credits)} · 사전 단가는 미공개`
+        ? `${route} 최근 사용 크레딧 ${priceText(observed.credits)} · 사전 단가는 미공개`
         : route !== "Comfy" && directRef
           ? `${route} 외부 직접 API ${directRef.rateText}/초 · ${directRef.duration}초 참고 총 약 ${directRef.creditTotalText} (Router 실제 청구액은 실행 후 확인)`
         : resolutionNotice
@@ -561,12 +589,6 @@ function installVueHeaderSupport() {
       grid-column: 1 / -1; margin: -2px 12px 4px; color: #dcc5f2;
       font-size: 10px; line-height: 1.35;
     }
-    .soylab-router-vue .soylab-run-status {
-      grid-column: 1 / -1; margin: 2px 12px 5px; padding: 5px 9px;
-      border-radius: 7px; background: #302343; color: #d9f5df;
-      font-size: 11px; font-weight: 600;
-    }
-    .soylab-router-vue .soylab-run-status[hidden] { display: none !important; }
     .soylab-router-vue .soylab-unsupported-value { color: ${CORAL} !important; }
     .soylab-router-vue .soylab-unsupported-output { display: none !important; }
     .soylab-price-popup {
@@ -777,12 +799,14 @@ async function openApiKeyFile() {
     }
   } catch (error) {
     window.alert(`API KEY.INI를 열지 못했습니다: ${error.message}`);
+  } finally {
+    await refreshKeyFileStatus();
   }
 }
 
 function addKeyButton(node) {
   if (node.widgets?.some((item) => item._soylabKeyButton)) return;
-  const button = node.addWidget("button", "API KEY.INI 열기", null, openApiKeyFile);
+  const button = node.addWidget("button", keyButtonLabel(), null, openApiKeyFile);
   button._soylabKeyButton = true;
   button.serialize = false;
   const current = node.widgets.indexOf(button);
@@ -791,26 +815,6 @@ function addKeyButton(node) {
     node.widgets.splice(current, 1);
     node.widgets.splice(help + 1, 0, button);
   }
-}
-
-function addStatusWidget(node) {
-  if (node.widgets?.some((item) => item.name === "soylab_run_status")) return;
-  const status = {
-    name: "soylab_run_status", type: "soylab_run_status", serialize: false,
-    computeSize: () => [0, 20],
-    draw(ctx, current, width, y) {
-      const message = statusText(current);
-      if (!message) return;
-      ctx.save();
-      ctx.fillStyle = current._soylabStatus?.stage === "failed" ? CORAL : "#D9F5DF";
-      ctx.font = "bold 11px Inter, Arial, sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText(message, 14, y + 14, width - 24);
-      ctx.restore();
-    },
-  };
-  node.addCustomWidget(status);
-  node.setSize([node.size[0], node.size[1] + 20]);
 }
 
 app.registerExtension({
@@ -826,21 +830,11 @@ app.registerExtension({
       addKeyHelp(this);
       addKeyButton(this);
       addPriceButton(this);
-      addStatusWidget(this);
       installSelectionWatch(this);
       setTimeout(() => { updateOutputLabels(this); queueVueSync(this.id); }, 0);
       return result;
     };
   },
-});
-
-api.addEventListener("soylab_router_status", (event) => {
-  const detail = event.detail || {};
-  const node = app.graph?.getNodeById?.(Number(detail.node_id));
-  if (node?.type !== NODE_ID || !STATUS_LABELS[detail.stage]) return;
-  node._soylabStatus = { stage: detail.stage, queue_position: detail.queue_position, request_id: detail.stage === "preparing" ? null : (detail.request_id || node._soylabStatus?.request_id) };
-  node.setDirtyCanvas?.(true, true);
-  queueVueSync(node.id);
 });
 
 api.addEventListener("executed", (event) => {
@@ -860,4 +854,10 @@ api.addEventListener("executed", (event) => {
   }
   node.setDirtyCanvas?.(true, true);
   queueVueSync(node.id);
+});
+
+refreshKeyFileStatus();
+window.addEventListener("focus", refreshKeyFileStatus);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshKeyFileStatus();
 });
