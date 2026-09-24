@@ -1,6 +1,6 @@
 [project]
 name = "soylab-comfy-router"
-version = "1.0.0"
+version = "1.0.1"
 description = "Run Comfy Router image, video, and audio models from one ComfyUI node with provider selection and cost references."
 dependencies = []
 

@@ -2,6 +2,7 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { routerLocale, routerText } from "./i18n.js";
 import { tokenPriceReference } from "./pricing.js";
+import { captureIncomingLinks, restoreIncomingLinks, restoreModelWidgetValues } from "./link_recovery.mjs?v=1.0.1";
 
 const NODE_ID = "SoylabComfyRouter";
 const TITLE = "SOYLAB Comfy Router";
@@ -1136,6 +1137,14 @@ app.registerExtension({
   name: "soylab.comfy.router",
   beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData.name !== NODE_ID) return;
+    const configure = nodeType.prototype.configure;
+    nodeType.prototype.configure = function (info) {
+      const incoming = captureIncomingLinks(this, info);
+      const result = configure.call(this, info);
+      restoreModelWidgetValues(this, info);
+      restoreIncomingLinks(this, info, incoming);
+      return result;
+    };
     const created = nodeType.prototype.onNodeCreated;
     nodeType.prototype.onNodeCreated = function (...args) {
       const result = created?.apply(this, args);
