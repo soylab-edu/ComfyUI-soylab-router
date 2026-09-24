@@ -1,6 +1,6 @@
 # Comfy Registry 발행 상태와 업데이트
 
-**2026-09-24:** [SOYLAB Comfy Router 1.0.0](https://registry.comfy.org/ko/nodes/soylab-comfy-router)을 `soylab-edu` Publisher로 발행했습니다. Registry가 공개 다운로드 파일을 제공하고 있으며, 확인 시점의 버전 API 상태는 `Pending`입니다. ComfyUI-Manager 검색 반영은 Registry의 처리 완료 후 다시 확인해야 합니다. GitHub 공개와 Registry 발행은 별개입니다.
+**2026-09-24:** [SOYLAB Comfy Router 1.0.1](https://registry.comfy.org/ko/nodes/soylab-comfy-router)을 `soylab-edu` Publisher로 발행했습니다. 탭 전환 후 이미지 연결과 프롬프트를 복원하고, 이미지 입력 슬롯 확장을 유지하는 버그 패치입니다. Registry 다운로드 파일의 체크섬이 로컬 검증본과 일치합니다. 확인 시점의 버전 API 상태는 `Pending`이므로 ComfyUI-Manager 검색 반영은 처리 완료 후 다시 확인해야 합니다. 이전 1.0.0의 현재 API 상태는 `Flagged`이며 원인은 확인되지 않았습니다.
 
 다음 버전을 발행할 때:
 
@@ -15,6 +15,6 @@
 
 ## English
 
-**Published on 2026-09-24:** [SOYLAB Comfy Router 1.0.0](https://registry.comfy.org/nodes/soylab-comfy-router) under publisher `soylab-edu`. The Registry serves the package download. The version API reported `Pending` at the time of verification, so check ComfyUI-Manager search again after Registry processing.
+**Published on 2026-09-24:** [SOYLAB Comfy Router 1.0.1](https://registry.comfy.org/nodes/soylab-comfy-router) under publisher `soylab-edu`. This bug patch restores image links and prompt values after switching workflow tabs and preserves the next image input slot. The Registry download checksum matches the validated local package. The version API reported `Pending` at verification time, so check ComfyUI-Manager search after Registry processing. The previous 1.0.0 currently reports `Flagged`; the reason has not been established.
 
 For later releases, increase `project.version` in `pyproject.toml`, validate and inspect the package, then publish with the publisher's Registry key. Keep that key and the separate Comfy Router runtime key out of Git and packages. A license remains unset until the owner chooses one; validation passes with an advisory warning.

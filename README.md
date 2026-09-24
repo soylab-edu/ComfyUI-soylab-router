@@ -14,7 +14,7 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 
 ## 설치와 API 키
 
-V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다. [Comfy Registry에 버전 1.0.0을 발행](https://registry.comfy.org/ko/nodes/soylab-comfy-router)했습니다. ComfyUI-Manager 검색 반영은 Registry의 버전 처리 상태에 따라 늦어질 수 있습니다.
+V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다. [Comfy Registry에 버전 1.0.1을 발행](https://registry.comfy.org/ko/nodes/soylab-comfy-router)했습니다. ComfyUI-Manager 검색 반영은 Registry의 버전 처리 상태에 따라 늦어질 수 있습니다.
 
 ### ChatGPT 데스크톱 앱에서 설치 요청
 

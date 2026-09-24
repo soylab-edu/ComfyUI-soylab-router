@@ -14,7 +14,7 @@
 
 ## 安装与 API 密钥
 
-需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本 ComfyUI。[版本 1.0.0 已发布到 Comfy Registry](https://registry.comfy.org/nodes/soylab-comfy-router)。Registry 处理该版本期间，ComfyUI-Manager 搜索结果可能稍后才会显示。
+需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本 ComfyUI。[版本 1.0.1 已发布到 Comfy Registry](https://registry.comfy.org/nodes/soylab-comfy-router)。Registry 处理该版本期间，ComfyUI-Manager 搜索结果可能稍后才会显示。
 
 ### 通过 ChatGPT 桌面应用请求安装
 
