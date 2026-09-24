@@ -35,7 +35,7 @@ def _validate_selection(spec: ModelSpec, values: dict, images, videos, audios):
         raise ValueError(f"{spec.model_id}: {provider} 경로의 {resolution} 해상도는 Not Support입니다. 지원 해상도: {', '.join(supported)}")
 
 
-def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list[str], audios: list[str], advanced_json: str = "") -> tuple[dict, str]:
+def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list[str], audios: list[str], advanced_json: str = "", *, first_frame=None, last_frame=None) -> tuple[dict, str]:
     """Media values are data URIs, public signed URLs, or raw base64 as needed."""
     _validate_selection(spec, values, images, videos, audios)
     prompt = str(values.get("prompt", "")).strip()
@@ -58,13 +58,43 @@ def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list
             positions = ["first"] if len(images) == 1 else ["first"] + [{"type": "position", "positionPercentage": round(i / (len(images) - 1), 3)} for i in range(1, len(images) - 1)] + ["last"]
             payload["promptImage"] = [{"uri": image, "position": position} for image, position in zip(images, positions)]
     elif spec.adapter == "seedance":
+        mode = values.get("mode") or "auto"
+        if mode not in spec.modes:
+            raise ValueError(f"{spec.model_id}: {mode} 모드는 Not Support입니다.")
+        if last_frame and not first_frame:
+            raise ValueError("마지막 프레임은 첫 프레임과 함께 연결하세요.")
+        if mode == "image" and not first_frame:
+            raise ValueError("image 모드에는 첫 프레임 이미지가 필요합니다.")
+        if mode == "text" and (first_frame or last_frame or images or videos or audios):
+            raise ValueError("text 모드는 참조 미디어를 사용하지 않습니다. 연결을 해제하거나 auto 모드를 선택하세요.")
+        if mode == "reference" and not (images or videos or audios):
+            raise ValueError("reference 모드에는 이미지·영상·오디오 참조가 필요합니다.")
+        if mode in ("edit", "extend") and not videos:
+            raise ValueError(f"{mode} 모드에는 편집할 비디오 입력이 필요합니다.")
+        if mode in ("edit", "extend") and provider != "Comfy":
+            raise ValueError(f"{provider} Router 경로의 {mode} 모드 변환은 확인되지 않았습니다. 해당 모드는 Comfy 공급자에서 선택하세요.")
         if audios and not (images or videos) and not spec.supports_audio_only:
             raise ValueError("이 Seedance 버전은 오디오만으로 생성할 수 없습니다. 이미지 또는 비디오를 연결하세요.")
         content = [{"type": "text", "text": prompt}]
+        if first_frame:
+            content.append({"type": "image_url", "image_url": {"url": first_frame}, "role": "first_frame"})
+        if last_frame:
+            content.append({"type": "image_url", "image_url": {"url": last_frame}, "role": "last_frame"})
         content += [{"type": "image_url", "image_url": {"url": image}, "role": "reference_image"} for image in images]
         content += [{"type": "video_url", "video_url": {"url": video}, "role": "reference_video"} for video in videos]
         content += [{"type": "audio_url", "audio_url": {"url": audio}, "role": "reference_audio"} for audio in audios]
-        payload = {"content": content, "resolution": resolution, "ratio": ratio, "duration": int(duration), "generate_audio": values.get("generate_audio") is not False}
+        payload = {"content": content, "resolution": resolution, "ratio": ratio, "duration": int(duration), "generate_audio": values.get("generate_audio") is not False, "seed": int(values.get("seed") or 0), "watermark": bool(values.get("watermark", False))}
+        if spec.output_formats:
+            output_format = values.get("output_format") or spec.output_formats[0]
+            if output_format not in spec.output_formats:
+                raise ValueError(f"{spec.model_id}: {output_format} 출력 형식은 Not Support입니다.")
+            payload["output_format"] = output_format
+        if mode in ("reference", "edit", "extend") and "edit" in spec.modes:
+            payload["omni_reference_task_type"] = mode
+        if mode in ("edit", "extend"):
+            payload["ratio"] = "adaptive"
+        if mode == "edit":
+            payload["duration"] = -1
     elif spec.adapter == "seedream":
         payload = {"prompt": prompt, "size": resolution, "response_format": "url"}
         if images:

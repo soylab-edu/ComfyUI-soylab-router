@@ -1,10 +1,15 @@
+import asyncio
 import json
 import pathlib
+import tempfile
+from types import SimpleNamespace
 import unittest
+import urllib.error
 from unittest.mock import patch
 
-from soylab_comfy_router import SoylabComfyRouter, _selection
+from soylab_comfy_router import SoylabComfyRouter, _register_routes, _selection
 from soylab_comfy_router.catalog import ALT_PROVIDERS, BY_ID, BY_LABEL, MODELS, find_model
+from soylab_comfy_router.key_editor import open_key_file
 from soylab_comfy_router.payload import build_payload
 from soylab_comfy_router.result import media_reference
 from soylab_comfy_router.router import run_model
@@ -56,6 +61,7 @@ class CatalogTests(unittest.TestCase):
                 self.assertTrue(entry["source"].startswith("https://"))
                 self.assertLessEqual(entry["checked_at"], data["updated_at"])
                 self.assertIs(entry["reference_inputs"], False)
+                self.assertTrue(set(entry.get("priced_resolutions", ())).issubset(BY_ID[model_id].resolutions))
                 if "range_scope" in entry:
                     self.assertIn("range", entry)
                 rates = entry.get("rates") or entry.get("range")
@@ -78,6 +84,21 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual([item["type"] for item in payload["content"]], ["text", "image_url", "video_url", "audio_url"])
         self.assertTrue(payload["generate_audio"])
 
+    def test_seedance_partner_modes(self):
+        spec = find_model("Dreamina", "Seedance", "2.5")
+        first = "data:image/png;base64,AQ=="
+        payload, _ = build_payload(spec, {"prompt": "A city", "mode": "image"}, [], [], [], first_frame=first)
+        self.assertEqual(payload["content"][1]["role"], "first_frame")
+        with self.assertRaisesRegex(ValueError, "비디오"):
+            build_payload(spec, {"prompt": "A city", "mode": "edit"}, [], [], [])
+        edited, _ = build_payload(spec, {"prompt": "Change the sky", "mode": "edit"}, [], ["https://example.org/v.mp4"], [])
+        self.assertEqual(edited["omni_reference_task_type"], "edit")
+        self.assertEqual((edited["ratio"], edited["duration"]), ("adaptive", -1))
+        with self.assertRaisesRegex(ValueError, "변환은 확인되지"):
+            build_payload(spec, {"prompt": "Change the sky", "mode": "edit", "execution_provider": "runware"}, [], ["https://example.org/v.mp4"], [])
+        with self.assertRaisesRegex(ValueError, "Not Support"):
+            build_payload(find_model("Dreamina", "Seedance", "2.0"), {"prompt": "test", "mode": "edit"}, [], [], [])
+
     def test_unsupported_provider_rejected(self):
         spec = find_model("Runway", "Gen-4", "Turbo Video")
         with self.assertRaisesRegex(ValueError, "Not Support"):
@@ -85,14 +106,14 @@ class PayloadTests(unittest.TestCase):
 
     def test_seedance_alternate_resolution_limit(self):
         spec = BY_ID["byteplus/dreamina-seedance-2-5-260628"]
-        with self.assertRaisesRegex(ValueError, "higgsfield.*1080p.*Not Support"):
-            build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "1080p"}, [], [], [])
+        payload, provider = build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "1080p"}, [], [], [])
+        self.assertEqual((payload["resolution"], provider), ("1080p", "higgsfield"))
         with self.assertRaisesRegex(ValueError, "fal.*1080p.*Not Support"):
             build_payload(spec, {"prompt": "move", "execution_provider": "fal", "resolution": "1080p"}, [], [], [])
         payload, provider = build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "720p"}, [], [], [])
         self.assertEqual((payload["resolution"], provider), ("720p", "higgsfield"))
-        with self.assertRaisesRegex(ValueError, "higgsfield.*1080p.*Not Support"):
-            build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "720p"}, [], [], [], '{"resolution":"1080p"}')
+        with self.assertRaisesRegex(ValueError, "fal.*1080p.*Not Support"):
+            build_payload(spec, {"prompt": "move", "execution_provider": "fal", "resolution": "720p"}, [], [], [], '{"resolution":"1080p"}')
 
     def test_advanced_json_cannot_change_path_model(self):
         spec = find_model("OpenAI", "GPT Image", "2")
@@ -108,22 +129,70 @@ class ResultTests(unittest.TestCase):
 
 
 class RouterClientTests(unittest.TestCase):
-    def test_canonical_route_and_actual_cost_header(self):
+    def test_queued_route_reports_progress_and_actual_cost(self):
         class Response:
-            headers = {"X-Comfy-Credits-Used": "12.5"}
+            def __init__(self, body, headers=None):
+                self.body = body
+                self.headers = headers or {}
+                self.status = 200
             def __enter__(self): return self
             def __exit__(self, *_): return False
-            def read(self, _limit): return b'{"data":[]}'
+            def read(self, _limit): return self.body
 
-        with patch("soylab_comfy_router.router.urllib.request.urlopen", return_value=Response()) as call:
-            result, credits = run_model("openai/gpt-image-2", {"prompt": "test"}, "private-key", "fal")
-        request = call.call_args.args[0]
+        responses = [Response(b'{"request_id":"run-1","status":"IN_QUEUE","queue_position":1}'),
+                     Response(b'{"status":"IN_PROGRESS","queue_position":0}', {"Retry-After": "1"}),
+                     Response(b'{"status":"COMPLETED"}'),
+                     Response(b'{"data":[]}', {"X-Comfy-Credits-Used": "12.5"})]
+        stages = []
+        with patch("soylab_comfy_router.router.urllib.request.urlopen", side_effect=responses) as call, patch("soylab_comfy_router.router.time.sleep"):
+            result, credits = run_model("openai/gpt-image-2", {"prompt": "test"}, "private-key", "fal", lambda stage, **_: stages.append(stage))
+        request = call.call_args_list[0].args[0]
         self.assertEqual(credits, 12.5)
         self.assertEqual(result, {"data": []})
-        self.assertIn("/v2/models/openai/gpt-image-2", request.full_url)
+        self.assertIn("/v2/models/openai/gpt-image-2/requests", request.full_url)
         self.assertIn("model_provider=fal", request.full_url)
         self.assertEqual(request.get_header("X-api-key"), "private-key")
         self.assertNotIn("private-key", request.data.decode())
+        self.assertEqual(stages, ["submitting", "queued", "generating", "collecting"])
+        self.assertIn("/requests/run-1/status", call.call_args_list[1].args[0].full_url)
+
+    def test_queue_unavailable_falls_back_to_sync(self):
+        class Response:
+            headers = {"X-Comfy-Credits-Used": "3"}
+            def __enter__(self): return self
+            def __exit__(self, *_): return False
+            def read(self, _limit): return b'{"result":"ok"}'
+        error = urllib.error.HTTPError("https://api.comfy.org", 403, "not_enabled", {"X-Comfy-Error-Type": "not_enabled"}, None)
+        error.read = lambda _: b'{"error_type":"not_enabled"}'
+        with patch("soylab_comfy_router.router.urllib.request.urlopen", side_effect=[error, Response()]) as call:
+            result, credits = run_model("openai/gpt-image-2", {"prompt": "test"}, "private-key")
+        self.assertEqual((result, credits), ({"result": "ok"}, 3))
+        self.assertEqual(call.call_args_list[0].args[0].get_header("Idempotency-key"), call.call_args_list[1].args[0].get_header("Idempotency-key"))
+
+    def test_queue_unavailable_stops_long_video_before_sync_deadline(self):
+        error = urllib.error.HTTPError("https://api.comfy.org", 403, "not_enabled", {"X-Comfy-Error-Type": "not_enabled"}, None)
+        error.read = lambda _: b'{"error_type":"not_enabled"}'
+        with patch("soylab_comfy_router.router.urllib.request.urlopen", side_effect=[error]) as call:
+            with self.assertRaisesRegex(RuntimeError, "동기식 연결 제한"):
+                run_model("byteplus/dreamina-seedance-2-5-260628", {"content": []}, "private-key", "runware", allow_sync_fallback=False)
+        self.assertEqual(call.call_count, 1)
+
+    def test_queue_admission_retry_reuses_idempotency_key(self):
+        class Response:
+            headers = {}
+            status = 200
+            def __init__(self, body): self.body = body
+            def __enter__(self): return self
+            def __exit__(self, *_): return False
+            def read(self, _limit): return self.body
+        busy = urllib.error.HTTPError("https://api.comfy.org", 409, "busy", {"X-Comfy-Error-Type": "concurrency_limit_exceeded", "Retry-After": "3"}, None)
+        busy.read = lambda _: b'{"error_type":"concurrency_limit_exceeded"}'
+        responses = [busy, Response(b'{"request_id":"run-2","status":"IN_QUEUE"}'), Response(b'{"status":"COMPLETED"}'), Response(b'{"result":"ok"}')]
+        with patch("soylab_comfy_router.router.urllib.request.urlopen", side_effect=responses) as call, patch("soylab_comfy_router.router.time.sleep") as pause:
+            result, _ = run_model("openai/gpt-image-2", {"prompt": "test"}, "private-key")
+        self.assertEqual(result, {"result": "ok"})
+        self.assertEqual(call.call_args_list[0].args[0].get_header("Idempotency-key"), call.call_args_list[1].args[0].get_header("Idempotency-key"))
+        pause.assert_called_with(3)
 
 
 class WorkflowTests(unittest.TestCase):
@@ -138,6 +207,43 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(len(workflow["links"]), 2)
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[4]["widgets_values"][0])
         self.assertIn("platform.comfy.org/profile/api-keys", nodes[5]["widgets_values"][0])
+
+
+class KeyEditorTests(unittest.TestCase):
+    def test_creates_private_blank_ini_without_overwriting_existing_key(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = pathlib.Path(temp) / "API KEY.INI"
+            with patch("soylab_comfy_router.key_editor.subprocess.Popen") as launch:
+                open_key_file(path)
+                self.assertEqual(path.read_text(encoding="utf-8"), "[comfy_router]\napi_key = \n")
+                path.write_text("[comfy_router]\napi_key = existing\n", encoding="utf-8")
+                open_key_file(path)
+            self.assertEqual(path.read_text(encoding="utf-8"), "[comfy_router]\napi_key = existing\n")
+            self.assertEqual(launch.call_count, 2)
+            self.assertIn(str(path), launch.call_args.args[0])
+
+    def test_editor_endpoint_requires_local_same_origin_request(self):
+        import server
+
+        handlers = {}
+        class Routes:
+            def post(self, path):
+                def register(handler):
+                    handlers[path] = handler
+                    return handler
+                return register
+        fake_server = SimpleNamespace(routes=Routes())
+        with patch.object(server.PromptServer, "instance", fake_server, create=True), patch("soylab_comfy_router._ROUTES_REGISTERED", False):
+            _register_routes()
+        handler = handlers["/soylab_router/open_api_key"]
+        foreign = SimpleNamespace(remote="127.0.0.1", host="127.0.0.1:8000", headers={"Origin": "https://another.example"})
+        remote = SimpleNamespace(remote="192.0.2.1", host="127.0.0.1:8000", headers={"Origin": "http://127.0.0.1:8000"})
+        local = SimpleNamespace(remote="127.0.0.1", host="127.0.0.1:8000", headers={"Origin": "http://127.0.0.1:8000"})
+        with patch("soylab_comfy_router.open_key_file") as open_file:
+            self.assertEqual(asyncio.run(handler(foreign)).status, 403)
+            self.assertEqual(asyncio.run(handler(remote)).status, 403)
+            self.assertEqual(asyncio.run(handler(local)).status, 200)
+        open_file.assert_called_once()
 
 
 if __name__ == "__main__":

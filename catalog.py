@@ -26,6 +26,8 @@ class ModelSpec:
     ratios: tuple[str, ...] = ()
     durations: tuple[int, ...] = ()
     qualities: tuple[str, ...] = ()
+    modes: tuple[str, ...] = ()
+    output_formats: tuple[str, ...] = ()
     requires_image: bool = False
     requires_video: bool = False
     supports_audio_only: bool = False
@@ -35,7 +37,7 @@ class ModelSpec:
 def _model(row: dict) -> ModelSpec:
     allowed = {item.name for item in fields(ModelSpec)}
     values = {key: value for key, value in row.items() if key in allowed}
-    for name in ("resolutions", "ratios", "durations", "qualities"):
+    for name in ("resolutions", "ratios", "durations", "qualities", "modes", "output_formats"):
         values[name] = tuple(values.get(name) or ())
     return ModelSpec(**values)
 

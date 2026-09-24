@@ -4,13 +4,16 @@ import asyncio
 import base64
 import configparser
 import json
+import ipaddress
 from pathlib import Path
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 from comfy_api.latest import IO, ComfyExtension
 
 from .catalog import ALT_PROVIDERS, BY_LABEL, BY_LEGACY_LABEL, DEFAULT_EXECUTION_PROVIDER, DEFAULT_MODEL_ID, MODELS, model_label
 from .media import audio_from_bytes, audio_wav_bytes, image_data_uri, image_from_bytes, video_bytes, video_from_bytes
+from .key_editor import open_key_file
 from .payload import build_payload
 from .result import media_reference
 from .router import RouterError, download_asset, run_model, upload_asset
@@ -18,6 +21,33 @@ from .router import RouterError, download_asset, run_model, upload_asset
 
 WEB_DIRECTORY = "./web"
 ROOT = Path(__file__).resolve().parent
+_ROUTES_REGISTERED = False
+
+
+def _register_routes():
+    global _ROUTES_REGISTERED
+    if _ROUTES_REGISTERED:
+        return
+    from aiohttp import web
+    from server import PromptServer
+
+    @PromptServer.instance.routes.post("/soylab_router/open_api_key")
+    async def open_api_key(request):
+        try:
+            local = ipaddress.ip_address(request.remote).is_loopback
+        except (TypeError, ValueError):
+            local = False
+        origin = request.headers.get("Origin")
+        site = request.headers.get("Sec-Fetch-Site")
+        if not local or (origin and urlsplit(origin).netloc != request.host) or site not in (None, "same-origin", "none"):
+            return web.json_response({"error": "로컬 ComfyUI 창에서만 사용할 수 있습니다."}, status=403)
+        try:
+            open_key_file(ROOT / "API KEY.INI")
+        except (OSError, FileNotFoundError) as exc:
+            return web.json_response({"error": f"편집기를 열지 못했습니다: {exc}"}, status=500)
+        return web.json_response({"ok": True})
+
+    _ROUTES_REGISTERED = True
 
 
 def _api_key(widget_value: str) -> str:
@@ -68,7 +98,14 @@ def _model_inputs(spec):
     if spec.adapter == "runway_video":
         inputs.append(IO.Int.Input("seed", default=0, min=0, max=4294967295))
     if spec.adapter == "seedance":
+        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), default=spec.modes[0], tooltip="auto=자동 · text=텍스트 · image=첫/마지막 프레임 · reference=참조 · edit=영상 편집 · extend=영상 연장"))
+        inputs.append(IO.Image.Input("first_frame", optional=True, tooltip="첫 프레임. image 모드에서는 필수입니다."))
+        inputs.append(IO.Image.Input("last_frame", optional=True, tooltip="마지막 프레임. 첫 프레임과 함께 연결하세요."))
+        inputs.append(IO.Int.Input("seed", default=0, min=0, max=4294967295))
+        inputs.append(IO.Boolean.Input("watermark", default=False))
         inputs.append(IO.Boolean.Input("generate_audio", default=True, tooltip="영상에 오디오 생성"))
+        if spec.output_formats:
+            inputs.append(IO.Combo.Input("output_format", options=list(spec.output_formats), default=spec.output_formats[0]))
     if spec.qualities:
         inputs.append(IO.Combo.Input("quality", options=list(spec.qualities), default=spec.qualities[0]))
     inputs.extend(_media_inputs(spec))
@@ -119,11 +156,27 @@ class SoylabComfyRouter(IO.ComfyNode):
                 IO.String.Output("raw_json", display_name="RAW JSON"),
                 IO.String.Output("cost", display_name="COST"),
             ],
+            hidden=[IO.Hidden.unique_id],
             not_idempotent=True,
         )
 
     @classmethod
     async def execute(cls, api_key: str, model: dict, advanced_json: str = "") -> IO.NodeOutput:
+        from server import PromptServer
+
+        node_id = str(cls.hidden.unique_id)
+        def report(stage, **details):
+            PromptServer.instance.send_sync("soylab_router_status", {"node_id": node_id, "stage": stage, **details})
+
+        report("preparing")
+        try:
+            return await cls._execute_with_status(api_key, model, advanced_json, report)
+        except Exception:
+            report("failed")
+            raise
+
+    @classmethod
+    async def _execute_with_status(cls, api_key, model, advanced_json, report):
         key = _api_key(api_key)
         if not key:
             raise ValueError("개인 API 키를 입력하거나 API KEY.INI 파일에 저장하세요.")
@@ -133,13 +186,17 @@ class SoylabComfyRouter(IO.ComfyNode):
         video_inputs = _ordered_values(values.get("reference_videos"))
         videos = []
         for video in video_inputs:
+            report("uploading")
             data = video_bytes(video)
             if spec.adapter == "runway_aleph":
                 videos.append("data:video/mp4;base64," + base64.b64encode(data).decode("ascii"))
             else:
                 videos.append(await asyncio.to_thread(upload_asset, data, f"soylab-{uuid4().hex}.mp4", "video/mp4", key))
-        payload, provider = build_payload(spec, values, images, videos, audios, advanced_json)
-        result, actual_credits = await asyncio.to_thread(run_model, spec.model_id, payload, key, provider)
+        first = image_data_uri(values["first_frame"]) if values.get("first_frame") is not None else None
+        last = image_data_uri(values["last_frame"]) if values.get("last_frame") is not None else None
+        payload, provider = build_payload(spec, values, images, videos, audios, advanced_json, first_frame=first, last_frame=last)
+        result, actual_credits = await asyncio.to_thread(run_model, spec.model_id, payload, key, provider, report, spec.output == "IMAGE")
+        report("downloading")
         reference, mime = media_reference(result, spec.output)
         image = video = audio = None
         if reference is not None:
@@ -155,6 +212,7 @@ class SoylabComfyRouter(IO.ComfyNode):
         credits_text = f"{actual_credits:g} credits" if actual_credits is not None else "응답에 과금 정보 없음"
         cost_text = f"{spec.model_id} · {provider} · {credits_text}"
         raw = json.dumps(result, ensure_ascii=False, indent=2)
+        report("completed")
         return IO.NodeOutput(image, video, audio, raw, cost_text, ui={"soylab_router_cost": [{"model_id": spec.model_id, "provider": provider, "credits": actual_credits}]})
 
 
@@ -164,6 +222,7 @@ class SoylabRouterExtension(ComfyExtension):
 
 
 async def comfy_entrypoint():
+    _register_routes()
     return SoylabRouterExtension()
 
 

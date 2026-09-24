@@ -139,6 +139,8 @@
       "version": "2.5",
       "model_id": "byteplus/dreamina-seedance-2-5-260628",
       "adapter": "seedance",
+      "modes": ["auto", "text", "image", "reference", "edit", "extend"],
+      "output_formats": ["mp4", "mov"],
       "output": "VIDEO",
       "images": 30,
       "videos": 10,
@@ -203,10 +205,12 @@
         },
         {
           "name": "higgsfield",
-          "resolutions": [
-            "480p",
-            "720p"
-          ]
+          "resolution_notes": {
+            "1080p": {
+              "text": "Higgsfield 앱 1080p 지원 · Router higgsfield 경로·사전 요금 미확인",
+              "source": "https://www.higgsfield.company/creator-hub/changelog"
+            }
+          }
         },
         {
           "name": "runware"
@@ -292,7 +296,11 @@
             "approximate": true,
             "source": "https://open.higgsfield.ai/models/bytedance/seedance-2.5/text-to-video/playground",
             "checked_at": "2026-09-24",
-            "note": "The page lists 480p and 720p, with an overall $0.144–$0.3236/sec range but no unambiguous per-resolution mapping. Do not present the range as a price for 1080p or as an exact quote for either supported resolution."
+            "note": "Higgsfield 공개 API 문서는 480p/720p 요금만 게시합니다. Higgsfield 앱은 1080p를 제공하지만 Router의 higgsfield 경로 가능 여부와 1080p 비용은 확인되지 않았습니다. 이 가격 범위를 1080p에 적용하지 마세요.",
+            "priced_resolutions": [
+              "480p",
+              "720p"
+            ]
           },
           "runware": {
             "kind": "direct_api_per_output_second",
@@ -325,6 +333,7 @@
       "version": "2.0",
       "model_id": "byteplus/dreamina-seedance-2-0-260128",
       "adapter": "seedance",
+      "modes": ["auto", "text", "image", "reference"],
       "output": "VIDEO",
       "images": 9,
       "videos": 3,
@@ -442,6 +451,7 @@
       "version": "2.0 Fast",
       "model_id": "byteplus/dreamina-seedance-2-0-fast-260128",
       "adapter": "seedance",
+      "modes": ["auto", "text", "image", "reference"],
       "output": "VIDEO",
       "images": 9,
       "videos": 3,
@@ -516,6 +526,7 @@
       "version": "2.0 Mini",
       "model_id": "byteplus/dreamina-seedance-2-0-mini",
       "adapter": "seedance",
+      "modes": ["auto", "text", "image", "reference"],
       "output": "VIDEO",
       "images": 9,
       "videos": 3,
