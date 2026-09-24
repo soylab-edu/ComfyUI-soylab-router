@@ -2,5 +2,6 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 API KEY.INI
+[Aa][Pp][Ii][ _-][Kk][Ee][Yy].[Ii][Nn][Ii]
 pricing_overrides.json
 .DS_Store

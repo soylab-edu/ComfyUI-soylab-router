@@ -422,8 +422,10 @@ function syncVueNode(id) {
       status = document.createElement("div");
       status.className = "soylab-run-status";
       status.setAttribute("role", "status");
-      (costButton.closest(".lg-node-widget") || costButton.parentElement)?.after(status);
     }
+    const widgetRows = [...host.querySelectorAll(".lg-node-widget")];
+    const lastWidget = widgetRows.at(-1);
+    if (lastWidget && status.previousElementSibling !== lastWidget) lastWidget.after(status);
     const message = statusText(node);
     if (status && status.textContent !== message) status.textContent = message;
     if (status) status.hidden = !message;
@@ -808,12 +810,6 @@ function addStatusWidget(node) {
     },
   };
   node.addCustomWidget(status);
-  const current = node.widgets.indexOf(status);
-  const button = node.widgets.findIndex((item) => item._soylabPriceButton);
-  if (current >= 0 && button >= 0) {
-    node.widgets.splice(current, 1);
-    node.widgets.splice(button + 1, 0, status);
-  }
   node.setSize([node.size[0], node.size[1] + 20]);
 }
 
