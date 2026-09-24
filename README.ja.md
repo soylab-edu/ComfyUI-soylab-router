@@ -14,7 +14,7 @@ Python 標準ライブラリから Router REST API を直接呼び出すため�
 
 ## インストールと API キー
 
-V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。このノードはまだ ComfyUI-Manager に登録されていません。
+V3 `DynamicCombo` と `Autogrow` に対応する新しい ComfyUI が必要です。[バージョン 1.0.0 は Comfy Registry に公開済み](https://registry.comfy.org/ja/nodes/soylab-comfy-router)です。Registry での処理中は ComfyUI-Manager の検索結果への反映に時間がかかる場合があります。
 
 ### ChatGPT デスクトップアプリでインストールを依頼
 
@@ -50,7 +50,7 @@ Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
 
 Git でインストール済みの場合は、`ComfyUI-soylab-router` フォルダー内で `git pull` を実行し、ComfyUI を再起動してください。同じ場所に再度クローンしないでください。
 
-ComfyUI-Manager への登録を希望する開発者は、[Comfy Registry 公開手順](REGISTRY.md)をご覧ください。
+公開状況と今後の更新手順は [Comfy Registry の案内](REGISTRY.md)をご覧ください。
 
 `workflows` フォルダーには [Seedance 2.5 の画像→動画例](workflows/seedance_2_5_image_to_video.json)と [GPT Image 2 の画像編集例](workflows/image_edit_gpt_image_2.json)があります。[ワークフローメタデータを削除した参照画像](workflows/soylab-reference.png)を ComfyUI の `input` フォルダーにコピーしてください。動画例は画像読み込み→Router→動画保存を接続し、[韓国語](workflows/USAGE.ko.md)・[英語](workflows/USAGE.en.md)の使用方法メモを含みます。API キーは含まれません。
 

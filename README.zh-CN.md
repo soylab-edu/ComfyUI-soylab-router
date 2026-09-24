@@ -14,7 +14,7 @@
 
 ## 安装与 API 密钥
 
-需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本 ComfyUI。本节点尚未被 ComfyUI-Manager 收录。
+需要支持 V3 `DynamicCombo` 和 `Autogrow` 的较新版本 ComfyUI。[版本 1.0.0 已发布到 Comfy Registry](https://registry.comfy.org/nodes/soylab-comfy-router)。Registry 处理该版本期间，ComfyUI-Manager 搜索结果可能稍后才会显示。
 
 ### 通过 ChatGPT 桌面应用请求安装
 
@@ -50,7 +50,7 @@ Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
 
 如果此前通过 Git 安装，请在 `ComfyUI-soylab-router` 文件夹中运行 `git pull`，然后重启 ComfyUI。不要在同一位置再次克隆。
 
-希望在 ComfyUI-Manager 中收录节点的开发者可参阅 [Comfy Registry 发布清单](REGISTRY.md)。
+发布状态和后续更新步骤请参阅 [Comfy Registry 指南](REGISTRY.md)。
 
 `workflows` 文件夹包含 [Seedance 2.5 图像转视频示例](workflows/seedance_2_5_image_to_video.json)和 [GPT Image 2 图像编辑示例](workflows/image_edit_gpt_image_2.json)。请将[已删除工作流元数据的参考图像](workflows/soylab-reference.png)复制到 ComfyUI 的 `input` 文件夹。视频示例连接了加载图像→Router→保存视频，并包含[韩语](workflows/USAGE.ko.md)和[英语](workflows/USAGE.en.md)使用说明。示例不含 API 密钥。
 

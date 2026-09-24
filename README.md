@@ -14,7 +14,7 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 
 ## 설치와 API 키
 
-V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다. 아직 ComfyUI-Manager에 등록되지 않았습니다.
+V3 `DynamicCombo`와 `Autogrow`를 지원하는 최신 ComfyUI가 필요합니다. [Comfy Registry에 버전 1.0.0을 발행](https://registry.comfy.org/ko/nodes/soylab-comfy-router)했습니다. ComfyUI-Manager 검색 반영은 Registry의 버전 처리 상태에 따라 늦어질 수 있습니다.
 
 ### ChatGPT 데스크톱 앱에서 설치 요청
 
@@ -50,7 +50,7 @@ Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
 
 Git으로 설치한 기존 폴더는 `ComfyUI-soylab-router` 안에서 `git pull`로 업데이트한 뒤 ComfyUI를 재시작하세요. 같은 폴더에 다시 `git clone`하지 마세요.
 
-ComfyUI-Manager 검색 목록에 등록하려는 개발자는 [Comfy Registry 등록 준비 안내](REGISTRY.md)를 참고하세요.
+발행 상태와 이후 업데이트 절차는 [Comfy Registry 안내](REGISTRY.md)를 참고하세요.
 
 `workflows` 폴더에는 [Seedance 2.5 이미지→비디오 예시](workflows/seedance_2_5_image_to_video.json)와 [GPT Image 2 이미지 편집 예시](workflows/image_edit_gpt_image_2.json)가 있습니다. 두 예시 모두 [메타데이터를 제거한 참조 이미지](workflows/soylab-reference.png)를 사용하며 API 키는 포함하지 않습니다. 이미지를 ComfyUI의 `input` 폴더에 복사한 뒤 예시를 여세요. 영상 예시에는 이미지 로드·Router·비디오 저장 노드와 [한국어](workflows/USAGE.ko.md)·[영어](workflows/USAGE.en.md) 사용 방법 메모가 연결되어 있습니다.
 

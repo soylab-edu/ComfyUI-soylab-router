@@ -14,7 +14,7 @@ This node sends REST requests with Python's standard library. The SDK installati
 
 ## Install
 
-A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required. This node is not yet listed in ComfyUI-Manager.
+A current ComfyUI release with V3 `DynamicCombo` and `Autogrow` support is required. [Version 1.0.0 is published in Comfy Registry](https://registry.comfy.org/nodes/soylab-comfy-router). It may take time to appear in ComfyUI-Manager search while Registry processes the version.
 
 ### Ask ChatGPT Desktop to install it
 
@@ -50,7 +50,7 @@ Install https://github.com/soylab-edu/ComfyUI-soylab-router in ComfyUI.
 
 If installed with Git, run `git pull` inside `ComfyUI-soylab-router` and restart ComfyUI. Do not clone a second copy into the same folder.
 
-Developers who want a ComfyUI-Manager listing can follow the [Comfy Registry publication checklist](REGISTRY.md).
+See [Comfy Registry publication details](REGISTRY.md) for status and future updates.
 
 The `workflows` folder contains a [Seedance 2.5 image-to-video example](workflows/seedance_2_5_image_to_video.json) and a [GPT Image 2 image-editing example](workflows/image_edit_gpt_image_2.json). Both use [the reference image with workflow metadata removed](workflows/soylab-reference.png). Copy the image into ComfyUI's `input` folder before opening a sample. The video sample connects Load Image → Router → Save Video and embeds [Korean](workflows/USAGE.ko.md) and [English](workflows/USAGE.en.md) usage notes. Neither workflow contains an API key.
 
