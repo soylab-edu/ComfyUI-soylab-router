@@ -25,7 +25,7 @@
       },
       "model_mode": {
         "name": "模式",
-        "tooltip": "选择所选模型的操作或参考模式。可用选项因模型而异。"
+        "tooltip": "image：image_1 为首帧，image_2 为尾帧。reference：编号图像用作参考图像。"
       },
       "preset_voice": {
         "name": "预设声音",
@@ -73,7 +73,7 @@
       },
       "model_first_frame": {
         "name": "首帧",
-        "tooltip": "image 模式下必填，与 image_1 分开。"
+        "tooltip": "旧工作流的首帧输入。image 模式下也可以使用 image_1。"
       },
       "last_frame": {
         "name": "尾帧",
@@ -81,7 +81,7 @@
       },
       "model_last_frame": {
         "name": "尾帧",
-        "tooltip": "与首帧一起连接。"
+        "tooltip": "旧工作流的尾帧输入。image 模式下也可以使用 image_2。"
       },
       "seed": {
         "name": "随机种子",
@@ -152,10 +152,12 @@
         "tooltip": "所选模型的附加原生 JSON 参数。model 字段在 URL 中指定。"
       },
       "model_reference_images_image_1": {
-        "name": "参考图像 1"
+        "name": "图像 1",
+        "tooltip": "image 模式下为首帧；reference 模式下为参考图像 1。"
       },
       "model_reference_images_image_2": {
-        "name": "参考图像 2"
+        "name": "图像 2",
+        "tooltip": "image 模式下为尾帧；reference 模式下为参考图像 2。"
       },
       "model_reference_images_image_3": {
         "name": "参考图像 3"

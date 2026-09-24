@@ -7,7 +7,7 @@ import unittest
 import urllib.error
 from unittest.mock import Mock, patch
 
-from soylab_comfy_router import SoylabComfyRouter, _prepare_provider_images, _register_routes, _report_progress, _selection
+from soylab_comfy_router import SoylabComfyRouter, _prepare_provider_images, _register_routes, _report_progress, _seedance_frame_aliases, _selection
 from soylab_comfy_router.catalog import ALT_PROVIDERS, BY_ID, BY_LABEL, MODELS, SEED_AUDIO_VOICES, find_model
 from soylab_comfy_router.key_editor import open_key_file
 from soylab_comfy_router.payload import build_payload
@@ -170,6 +170,22 @@ class PayloadTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Not Support"):
             build_payload(find_model("Dreamina", "Seedance", "2.0"), {"prompt": "test", "mode": "edit"}, [], [], [])
 
+    def test_seedance_numbered_images_become_frames_only_in_image_mode(self):
+        spec = find_model("Dreamina", "Seedance", "2.5")
+        first = "data:image/png;base64,AQ=="
+        last = "data:image/png;base64,Ag=="
+        extra = "data:image/png;base64,Aw=="
+        references, start, end = _seedance_frame_aliases("image", {"image_1": first, "image_2": last, "image_3": extra}, None, None)
+        payload, _ = build_payload(spec, {"prompt": "Move", "mode": "image"}, references, [], [], first_frame=start, last_frame=end)
+        self.assertEqual([(item["role"], item["image_url"]["url"]) for item in payload["content"][1:]],
+                         [("first_frame", first), ("last_frame", last), ("reference_image", extra)])
+        references, start, end = _seedance_frame_aliases("reference", {"image_1": first}, None, None)
+        self.assertEqual((references, start, end), ([first], None, None))
+        with self.assertRaisesRegex(ValueError, "image_1 또는 first_frame"):
+            _seedance_frame_aliases("image", {"image_1": first}, first, None)
+        with self.assertRaisesRegex(ValueError, "image_2 또는 last_frame"):
+            _seedance_frame_aliases("image", {"image_2": last}, None, last)
+
     def test_unsupported_provider_rejected(self):
         spec = find_model("Runway", "Gen-4", "Turbo Video")
         with self.assertRaisesRegex(ValueError, "Not Support"):
@@ -295,8 +311,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(nodes[1]["widgets_values"][0], "soylab-reference.png")
         self.assertEqual(nodes[2]["widgets_values_named"]["model.mode"], "image")
         self.assertEqual(nodes[2]["widgets_values_named"]["api_key"], "")
-        self.assertEqual(workflow["links"], [[1, 1, 0, 2, 8, "IMAGE"], [2, 2, 1, 3, 0, "VIDEO"]])
-        self.assertEqual(nodes[2]["inputs"][8]["name"], "model.first_frame")
+        self.assertEqual(workflow["links"], [[1, 1, 0, 2, 14, "IMAGE"], [2, 2, 1, 3, 0, "VIDEO"]])
+        self.assertEqual(nodes[2]["inputs"][8]["link"], None)
+        self.assertEqual(nodes[2]["inputs"][14]["name"], "model.reference_images.image_1")
         self.assertEqual(len([node for node in nodes.values() if node["type"] == "MarkdownNote"]), 2)
         with Image.open(root / "workflows/soylab-reference.png") as image:
             self.assertNotIn("prompt", image.info)

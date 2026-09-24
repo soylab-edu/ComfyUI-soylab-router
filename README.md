@@ -29,13 +29,13 @@ Python 표준 라이브러리로 Router REST API를 직접 호출하므로 빠�
 | Google | Nano Banana 2·2 Lite·Pro | 이미지 |
 | BytePlus Audio | Seed Audio 1.0·Multilingual | 오디오 |
 
-Seedance의 **작업 모드**는 `auto`, `text`, `image`, `reference`입니다. 2.5에는 공식 파트너 노드의 `edit`, `extend`도 있습니다. `image` 모드에는 `first_frame` 입력이 필요하고 `last_frame`을 추가할 수 있습니다. `image_1`은 **참조 이미지**이지 첫 프레임이 아닙니다. `reference`는 참조 미디어, `edit`와 `extend`는 비디오가 필요합니다. 편집은 공식 노드처럼 원본 길이와 비율을 사용합니다. 아직 확인되지 않은 공급자 변환을 피하려고 `edit`와 `extend`는 Comfy 경로에서만 허용합니다.
+Seedance의 **작업 모드**는 `auto`, `text`, `image`, `reference`입니다. 2.5에는 공식 파트너 노드의 `edit`, `extend`도 있습니다. `image` 모드에서는 `image_1`이 첫 프레임, `image_2`가 마지막 프레임입니다. 기존 워크플로의 `first_frame`·`last_frame` 입력도 계속 사용할 수 있지만 같은 프레임에 두 입력을 동시에 연결할 수는 없습니다. `reference` 모드에서는 번호가 붙은 이미지 입력을 참조 이미지로 사용합니다. `edit`와 `extend`는 비디오가 필요합니다. 편집은 공식 노드처럼 원본 길이와 비율을 사용합니다. 아직 확인되지 않은 공급자 변환을 피하려고 `edit`와 `extend`는 Comfy 경로에서만 허용합니다.
 
 Seedream 5 Pro는 참조 이미지가 있을 때 `standard`(품질) / `fast`(속도) 프롬프트 최적화 모드를 선택합니다. Seed Audio는 `auto`, `text`, `audio`, `image`, `preset_voice` 참조 모드를 제공하며, 기본 음성 목록은 설치된 공식 파트너 노드의 선택지를 데이터 파일에 기록했습니다. 모드에 맞지 않는 입력은 유료 요청 전에 오류로 알려줍니다. 모델·공급자·모드·슬롯 개수 등 카탈로그 정보는 [`web/router-data.json`](web/router-data.json)에서 관리합니다.
 
 Higgsfield 경로의 Seedance 이미지 입력은 해당 업체의 이미지→영상 API가 접근 가능한 URL을 요구하므로 Comfy의 서명된 저장소 URL로 업로드한 뒤 Router에 전달합니다. 다른 경로는 모델 스키마가 허용하는 데이터 URI를 사용합니다. [Router의 Seedance 스키마](https://docs.comfy.org/development/comfy-router/models/byteplus/dreamina-seedance-2-5-260628/code)는 첫 프레임과 참조 이미지의 역할을 구분합니다.
 
-**첫 프레임을 고정하고 싶다면** `작업 모드: image`를 선택하고 이미지를 `first_frame`에 연결하세요. 프롬프트에 “10초·1080p”라고 써도 노드 설정의 `duration`과 `resolution`이 실제 요청 값입니다. 현재 실패 보고서의 설정은 프롬프트와 달리 **4초·480p**였습니다.
+**첫 프레임을 고정하고 싶다면** `작업 모드: image`를 선택하고 이미지를 `image_1`에 연결하세요. 끝 프레임도 정하려면 `image_2`에 연결하세요. 프롬프트에 “10초·1080p”라고 써도 노드 설정의 `duration`과 `resolution`이 실제 요청 값입니다.
 
 ## 공급자와 비용
 

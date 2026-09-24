@@ -132,7 +132,7 @@ def _model_inputs(spec):
     default_provider = DEFAULT_EXECUTION_PROVIDER if spec.model_id == DEFAULT_MODEL_ID else "Comfy"
     inputs = [IO.Combo.Input("execution_provider", options=route_options, display_name="공급자 선택", default=default_provider, tooltip="Router 실행 경로입니다. Comfy는 파트너 모델의 기본 경로이며 모델 제작사(예: Runway)와는 다른 개념입니다. 공식 대체 경로만 선택지에 표시됩니다.")]
     if spec.adapter == "seedance":
-        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="작업 모드", default=spec.modes[0], tooltip="auto=자동 · text=텍스트만 · image=첫/마지막 프레임 · reference=참조 미디어 · edit=영상 편집 · extend=영상 연장. image_1은 첫 프레임이 아닙니다."))
+        inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="작업 모드", default=spec.modes[0], tooltip="image 모드에서는 image_1=첫 프레임, image_2=마지막 프레임입니다. reference 모드에서는 참조 이미지로 사용합니다."))
     elif spec.adapter == "seedream" and spec.modes:
         inputs.append(IO.Combo.Input("mode", options=list(spec.modes), display_name="프롬프트 최적화 모드", default=spec.modes[0], tooltip="참조 이미지를 사용할 때 standard=품질 우선, fast=속도 우선. Seedream 5.0 Pro에서 지원합니다."))
     elif spec.adapter == "seed_audio" and spec.modes:
@@ -148,8 +148,8 @@ def _model_inputs(spec):
     if spec.adapter == "runway_video":
         inputs.append(IO.Int.Input("seed", default=0, min=0, max=4294967295))
     if spec.adapter == "seedance":
-        inputs.append(IO.Image.Input("first_frame", optional=True, tooltip="첫 프레임. image 모드에서는 필수입니다."))
-        inputs.append(IO.Image.Input("last_frame", optional=True, tooltip="마지막 프레임. 첫 프레임과 함께 연결하세요."))
+        inputs.append(IO.Image.Input("first_frame", optional=True, tooltip="첫 프레임 전용 입력. image 모드에서 image_1 대신 사용할 수 있습니다."))
+        inputs.append(IO.Image.Input("last_frame", optional=True, tooltip="마지막 프레임 전용 입력. image 모드에서 image_2 대신 사용할 수 있습니다."))
         inputs.append(IO.Int.Input("seed", default=0, min=0, max=4294967295))
         inputs.append(IO.Boolean.Input("watermark", default=False))
         inputs.append(IO.Boolean.Input("generate_audio", default=True, tooltip="영상에 오디오 생성"))
@@ -183,6 +183,23 @@ def _ordered_values(group):
     if not isinstance(group, dict):
         raise ValueError("참조 입력 형식이 잘못되었습니다.")
     return [value for _, value in sorted(group.items(), key=lambda pair: int(pair[0].rsplit("_", 1)[-1])) if value is not None]
+
+
+def _seedance_frame_aliases(mode, image_inputs, first_frame, last_frame):
+    """In image mode, numbered image sockets are the start and end frames."""
+    if mode != "image":
+        return _ordered_values(image_inputs), first_frame, last_frame
+    if image_inputs and not isinstance(image_inputs, dict):
+        raise ValueError("참조 입력 형식이 잘못되었습니다.")
+    image_inputs = image_inputs or {}
+    if first_frame is not None and image_inputs.get("image_1") is not None:
+        raise ValueError("첫 프레임은 image_1 또는 first_frame 한 곳에만 연결하세요.")
+    if last_frame is not None and image_inputs.get("image_2") is not None:
+        raise ValueError("마지막 프레임은 image_2 또는 last_frame 한 곳에만 연결하세요.")
+    first_frame = first_frame if first_frame is not None else image_inputs.get("image_1")
+    last_frame = last_frame if last_frame is not None else image_inputs.get("image_2")
+    references = {key: value for key, value in image_inputs.items() if key not in ("image_1", "image_2")}
+    return _ordered_values(references), first_frame, last_frame
 
 
 async def _prepare_provider_images(spec, provider, payload, key, report):
@@ -265,7 +282,14 @@ class SoylabComfyRouter(IO.ComfyNode):
         if not key:
             raise ValueError("개인 API 키를 입력하거나 API KEY.INI 파일에 저장하세요.")
         spec, values = _selection(model)
-        images = [image_data_uri(image) for image in _ordered_values(values.get("reference_images"))]
+        image_inputs = values.get("reference_images")
+        first_input = values.get("first_frame")
+        last_input = values.get("last_frame")
+        if spec.adapter == "seedance":
+            image_values, first_input, last_input = _seedance_frame_aliases(values.get("mode"), image_inputs, first_input, last_input)
+        else:
+            image_values = _ordered_values(image_inputs)
+        images = [image_data_uri(image) for image in image_values]
         audios = ["data:audio/wav;base64," + base64.b64encode(audio_wav_bytes(audio)).decode("ascii") for audio in _ordered_values(values.get("reference_audios"))]
         video_inputs = _ordered_values(values.get("reference_videos"))
         videos = []
@@ -276,8 +300,8 @@ class SoylabComfyRouter(IO.ComfyNode):
                 videos.append("data:video/mp4;base64," + base64.b64encode(data).decode("ascii"))
             else:
                 videos.append(await asyncio.to_thread(upload_asset, data, f"soylab-{uuid4().hex}.mp4", "video/mp4", key))
-        first = image_data_uri(values["first_frame"]) if values.get("first_frame") is not None else None
-        last = image_data_uri(values["last_frame"]) if values.get("last_frame") is not None else None
+        first = image_data_uri(first_input) if first_input is not None else None
+        last = image_data_uri(last_input) if last_input is not None else None
         payload, provider = build_payload(spec, values, images, videos, audios, advanced_json, first_frame=first, last_frame=last)
         await _prepare_provider_images(spec, provider, payload, key, report)
         result, actual_credits = await asyncio.to_thread(run_model, spec.model_id, payload, key, provider, report, spec.output == "IMAGE")

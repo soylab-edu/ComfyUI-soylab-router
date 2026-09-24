@@ -29,13 +29,13 @@ Python 標準ライブラリから Router REST API を直接呼び出すため�
 | Google | Nano Banana 2・2 Lite・Pro | 画像 |
 | BytePlus Audio | Seed Audio 1.0・Multilingual | 音声 |
 
-Seedance の**タスクモード**は `auto`、`text`、`image`、`reference` です。2.5 には公式パートナーノードと同じ `edit`、`extend` もあります。`image` モードには `first_frame` が必要で、`last_frame` も追加できます。`image_1` は**参照画像**であり、最初のフレームではありません。`reference` には参照メディア、`edit` と `extend` には動画が必要です。編集時は元動画の長さと縦横比を使います。代替プロバイダーでの変換を確認できていないため、`edit` と `extend` は Comfy 経路のみで許可します。
+Seedance の**タスクモード**は `auto`、`text`、`image`、`reference` です。2.5 には公式パートナーノードと同じ `edit`、`extend` もあります。`image` モードでは `image_1` が最初のフレーム、`image_2` が最後のフレームです。従来の `first_frame` と `last_frame` 入力も使えますが、同じ役割の入力を同時に接続することはできません。`reference` モードでは番号付き画像入力を参照画像として扱います。`edit` と `extend` には動画が必要です。編集時は元動画の長さと縦横比を使います。代替プロバイダーでの変換を確認できていないため、`edit` と `extend` は Comfy 経路のみで許可します。
 
 Seedream 5 Pro は、参照画像がある場合に `standard`（品質優先）/ `fast`（速度優先）のプロンプト最適化を選べます。Seed Audio は `auto`、`text`、`audio`、`image`、`preset_voice` の参照モードを持ち、プリセット音声はインストール済み公式パートナーノードの選択肢を使用します。モードに合わない入力は有料リクエストを送る前に検出します。モデル、プロバイダー、モード、入力数は [`web/router-data.json`](web/router-data.json) で管理します。
 
 Higgsfield 経路の Seedance 画像は、画像から動画への API がアクセス可能な URL を要求するため、Comfy の署名付きストレージにアップロードしてから Router に渡します。他の経路ではモデルのスキーマが許可するデータ URI を使います。[Router の Seedance スキーマ](https://docs.comfy.org/development/comfy-router/models/byteplus/dreamina-seedance-2-5-260628/code)では最初のフレームと参照画像が区別されています。
 
-**写真を厳密に最初のフレームにする場合**、タスクモードで `image` を選び、写真を `first_frame` に接続してください。プロンプトに「10 秒・1080p」と書いても、実際のリクエストにはノードの `duration` と `resolution` が使われます。今回のエラー報告に保存されていた設定は、プロンプトと異なり **4 秒・480p** でした。
+**写真を厳密に最初のフレームにする場合**、タスクモードで `image` を選び、写真を `image_1` に接続してください。最後のフレームは `image_2` に接続します。プロンプトに「10 秒・1080p」と書いても、実際のリクエストにはノードの `duration` と `resolution` が使われます。
 
 ## プロバイダーと料金
 

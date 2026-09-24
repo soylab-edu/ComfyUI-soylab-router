@@ -64,11 +64,11 @@ def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list
         if last_frame and not first_frame:
             raise ValueError("마지막 프레임은 첫 프레임과 함께 연결하세요.")
         if mode == "image" and not first_frame:
-            raise ValueError("image 모드에는 첫 프레임 이미지가 필요합니다.")
+            raise ValueError("image 모드에는 image_1 또는 first_frame에 첫 프레임 이미지를 연결하세요.")
         if mode == "text" and (first_frame or last_frame or images or videos or audios):
             raise ValueError("text 모드는 참조 미디어를 사용하지 않습니다. 연결을 해제하거나 auto 모드를 선택하세요.")
         if mode == "reference" and not (images or videos or audios):
-            raise ValueError("reference 모드에는 이미지·영상·오디오 참조가 필요합니다.")
+            raise ValueError("reference 모드에는 image_1 등 참조 이미지·영상·오디오가 필요합니다. 첫 프레임으로 사용하려면 image 모드를 선택하세요.")
         if mode in ("edit", "extend") and not videos:
             raise ValueError(f"{mode} 모드에는 편집할 비디오 입력이 필요합니다.")
         if mode in ("edit", "extend") and provider != "Comfy":

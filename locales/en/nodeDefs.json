@@ -25,7 +25,7 @@
       },
       "model_mode": {
         "name": "Mode",
-        "tooltip": "Choose the operation or reference mode. Available options depend on the selected model."
+        "tooltip": "image: image_1 is the first frame and image_2 is the last frame. reference: numbered images are references."
       },
       "preset_voice": {
         "name": "Preset voice",
@@ -73,7 +73,7 @@
       },
       "model_first_frame": {
         "name": "First frame",
-        "tooltip": "Required in image mode. This is separate from image_1."
+        "tooltip": "Legacy first-frame socket. In image mode, image_1 can be used instead."
       },
       "last_frame": {
         "name": "Last frame",
@@ -81,7 +81,7 @@
       },
       "model_last_frame": {
         "name": "Last frame",
-        "tooltip": "Connect with the first frame."
+        "tooltip": "Legacy last-frame socket. In image mode, image_2 can be used instead."
       },
       "seed": {
         "name": "Seed",
@@ -152,10 +152,12 @@
         "tooltip": "Additional native JSON parameters for the selected model. The model is specified in the URL."
       },
       "model_reference_images_image_1": {
-        "name": "Reference images 1"
+        "name": "Image 1",
+        "tooltip": "First frame in image mode; reference image 1 in reference mode."
       },
       "model_reference_images_image_2": {
-        "name": "Reference images 2"
+        "name": "Image 2",
+        "tooltip": "Last frame in image mode; reference image 2 in reference mode."
       },
       "model_reference_images_image_3": {
         "name": "Reference images 3"

@@ -34,14 +34,14 @@ try {
 } catch (_) {}
 
 function priceSignature(node, spec, route) {
+  const frames = frameSelection(node);
   return JSON.stringify([
     spec.model_id, route,
     field(node, "resolution", ""), field(node, "ratio", ""), field(node, "duration", ""),
     field(node, "quality", ""), field(node, "generate_audio", ""), field(node, "mode", ""),
     field(node, "output_format", ""),
-    node.inputs?.some((input) => input.name === `${inputPrefix(node)}.first_frame` && input.link != null),
-    node.inputs?.some((input) => input.name === `${inputPrefix(node)}.last_frame` && input.link != null),
-    refCount(node, "images"), refCount(node, "videos"), refCount(node, "audios"),
+    frames.firstFrame, frames.lastFrame,
+    frames.images, refCount(node, "videos"), refCount(node, "audios"),
   ]);
 }
 
@@ -78,9 +78,7 @@ function routeResolutionNote(spec, route, resolution) {
 function directReference(node, spec, route) {
   const entry = pricing.models?.[spec?.model_id]?.[route];
   if (!entry || field(node, "mode") === "edit" || field(node, "mode") === "extend") return null;
-  const firstFrame = !!node.inputs?.some((input) => input.name === `${inputPrefix(node)}.first_frame` && input.link != null);
-  const lastFrame = !!node.inputs?.some((input) => input.name === `${inputPrefix(node)}.last_frame` && input.link != null);
-  const images = refCount(node, "images");
+  const { firstFrame, lastFrame, images } = frameSelection(node);
   const videos = refCount(node, "videos");
   const audios = refCount(node, "audios");
   const allowed = entry.reference_inputs;
@@ -205,6 +203,18 @@ function field(node, name, fallback = undefined) {
 
 function refCount(node, type) {
   return node.inputs?.filter((input) => input.name?.startsWith(`${inputPrefix(node)}.reference_${type}.`) && input.link != null).length ?? 0;
+}
+
+function frameSelection(node) {
+  const connected = (name) => !!node.inputs?.some((input) => input.name === `${inputPrefix(node)}.${name}` && input.link != null);
+  const imageMode = field(node, "mode") === "image";
+  const aliasFirst = imageMode && connected("reference_images.image_1");
+  const aliasLast = imageMode && connected("reference_images.image_2");
+  return {
+    firstFrame: connected("first_frame") || aliasFirst,
+    lastFrame: connected("last_frame") || aliasLast,
+    images: refCount(node, "images") - Number(aliasFirst) - Number(aliasLast),
+  };
 }
 
 function usd(value) {
