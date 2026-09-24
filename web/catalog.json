@@ -1,0 +1,219 @@
+[
+  {
+    "service": "Runway",
+    "family": "Gen-4",
+    "version": "Turbo Video",
+    "model_id": "runway/gen4_turbo",
+    "output": "VIDEO",
+    "images": 1,
+    "videos": 0,
+    "audios": 0,
+    "alternates": []
+  },
+  {
+    "service": "Runway",
+    "family": "Gen-4",
+    "version": "Image",
+    "model_id": "runway/gen4_image",
+    "output": "IMAGE",
+    "images": 3,
+    "videos": 0,
+    "audios": 0,
+    "alternates": []
+  },
+  {
+    "service": "Runway",
+    "family": "Aleph",
+    "version": "2",
+    "model_id": "runway/aleph2",
+    "output": "VIDEO",
+    "images": 5,
+    "videos": 1,
+    "audios": 0,
+    "alternates": []
+  },
+  {
+    "service": "Dreamina",
+    "family": "Seedance",
+    "version": "2.5",
+    "model_id": "byteplus/dreamina-seedance-2-5-260628",
+    "output": "VIDEO",
+    "images": 30,
+    "videos": 10,
+    "audios": 10,
+    "alternates": [
+      "fal",
+      "higgsfield",
+      "runware",
+      "wavespeed"
+    ]
+  },
+  {
+    "service": "Dreamina",
+    "family": "Seedance",
+    "version": "2.0",
+    "model_id": "byteplus/dreamina-seedance-2-0-260128",
+    "output": "VIDEO",
+    "images": 9,
+    "videos": 3,
+    "audios": 3,
+    "alternates": [
+      "fal",
+      "higgsfield",
+      "runware",
+      "wavespeed"
+    ]
+  },
+  {
+    "service": "Dreamina",
+    "family": "Seedance",
+    "version": "2.0 Fast",
+    "model_id": "byteplus/dreamina-seedance-2-0-fast-260128",
+    "output": "VIDEO",
+    "images": 9,
+    "videos": 3,
+    "audios": 3,
+    "alternates": []
+  },
+  {
+    "service": "Dreamina",
+    "family": "Seedance",
+    "version": "2.0 Mini",
+    "model_id": "byteplus/dreamina-seedance-2-0-mini",
+    "output": "VIDEO",
+    "images": 9,
+    "videos": 3,
+    "audios": 3,
+    "alternates": []
+  },
+  {
+    "service": "Dreamina",
+    "family": "Seedream",
+    "version": "5.0 Pro",
+    "model_id": "byteplus/seedream-5-0-pro-260628",
+    "output": "IMAGE",
+    "images": 10,
+    "videos": 0,
+    "audios": 0,
+    "alternates": []
+  },
+  {
+    "service": "Dreamina",
+    "family": "Seedream",
+    "version": "5.0 Lite",
+    "model_id": "byteplus/seedream-5-0-260128",
+    "output": "IMAGE",
+    "images": 14,
+    "videos": 0,
+    "audios": 0,
+    "alternates": []
+  },
+  {
+    "service": "OpenAI",
+    "family": "GPT Image",
+    "version": "2",
+    "model_id": "openai/gpt-image-2",
+    "output": "IMAGE",
+    "images": 16,
+    "videos": 0,
+    "audios": 0,
+    "alternates": [
+      "fal",
+      "runware",
+      "wavespeed"
+    ]
+  },
+  {
+    "service": "OpenAI",
+    "family": "GPT Image",
+    "version": "2.5 Flare",
+    "model_id": "openai/gpt-image-2.5-flare",
+    "output": "IMAGE",
+    "images": 16,
+    "videos": 0,
+    "audios": 0,
+    "alternates": [
+      "fal",
+      "runware",
+      "wavespeed"
+    ]
+  },
+  {
+    "service": "OpenAI",
+    "family": "GPT Image",
+    "version": "2.5 Sunburst",
+    "model_id": "openai/gpt-image-2.5-sunburst",
+    "output": "IMAGE",
+    "images": 16,
+    "videos": 0,
+    "audios": 0,
+    "alternates": [
+      "fal",
+      "runware",
+      "wavespeed"
+    ]
+  },
+  {
+    "service": "Google",
+    "family": "Nano Banana",
+    "version": "2",
+    "model_id": "vertexai/gemini-3.1-flash-image",
+    "output": "IMAGE",
+    "images": 14,
+    "videos": 0,
+    "audios": 0,
+    "alternates": [
+      "fal",
+      "runware",
+      "wavespeed"
+    ]
+  },
+  {
+    "service": "Google",
+    "family": "Nano Banana",
+    "version": "2 Lite",
+    "model_id": "vertexai/gemini-3.1-flash-lite-image",
+    "output": "IMAGE",
+    "images": 14,
+    "videos": 0,
+    "audios": 0,
+    "alternates": []
+  },
+  {
+    "service": "Google",
+    "family": "Nano Banana",
+    "version": "Pro",
+    "model_id": "vertexai/gemini-3-pro-image",
+    "output": "IMAGE",
+    "images": 16,
+    "videos": 0,
+    "audios": 0,
+    "alternates": [
+      "fal",
+      "runware",
+      "wavespeed"
+    ]
+  },
+  {
+    "service": "BytePlus Audio",
+    "family": "Seed Audio",
+    "version": "1.0",
+    "model_id": "byteplus/seed-audio-1.0",
+    "output": "AUDIO",
+    "images": 1,
+    "videos": 0,
+    "audios": 3,
+    "alternates": []
+  },
+  {
+    "service": "BytePlus Audio",
+    "family": "Seed Audio",
+    "version": "1.0 Multilingual",
+    "model_id": "byteplus/seed-audio-1.0-multilingual",
+    "output": "AUDIO",
+    "images": 1,
+    "videos": 0,
+    "audios": 3,
+    "alternates": []
+  }
+]
