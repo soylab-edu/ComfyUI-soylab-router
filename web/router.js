@@ -107,8 +107,8 @@ function drawHeader(node, ctx) {
   const y = -titleHeight;
   ctx.save();
   const gradient = ctx.createLinearGradient(0, 0, width, 0);
-  gradient.addColorStop(0, "#9600FA");
-  gradient.addColorStop(.50, "#548289");
+  gradient.addColorStop(0, "#542080");
+  gradient.addColorStop(.50, "#3D6574");
   gradient.addColorStop(1, "#00ED08");
   ctx.fillStyle = gradient;
   ctx.beginPath();
