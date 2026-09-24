@@ -2,7 +2,7 @@
 
 import json
 
-from .catalog import ALT_PROVIDERS, ModelSpec
+from .catalog import ALT_PROVIDERS, ALT_PROVIDER_RESOLUTIONS, ModelSpec
 
 
 def _default(values: dict, key: str, fallback):
@@ -30,6 +30,9 @@ def _validate_selection(spec: ModelSpec, values: dict, images, videos, audios):
     provider = values.get("execution_provider") or "Comfy"
     if provider != "Comfy" and provider not in ALT_PROVIDERS.get(spec.model_id, ()):
         raise ValueError(f"{spec.model_id}: {provider} 경로는 Not Support입니다.")
+    supported = ALT_PROVIDER_RESOLUTIONS.get((spec.model_id, provider))
+    if resolution and supported and resolution not in supported:
+        raise ValueError(f"{spec.model_id}: {provider} 경로의 {resolution} 해상도는 Not Support입니다. 지원 해상도: {', '.join(supported)}")
 
 
 def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list[str], audios: list[str], advanced_json: str = "") -> tuple[dict, str]:
@@ -103,4 +106,7 @@ def build_payload(spec: ModelSpec, values: dict, images: list[str], videos: list
         if "model" in extra:
             raise ValueError("model은 Router URL에서 지정하므로 추가 JSON에 넣을 수 없습니다.")
         payload.update(extra)
+    supported = ALT_PROVIDER_RESOLUTIONS.get((spec.model_id, provider))
+    if supported and payload.get("resolution") not in supported:
+        raise ValueError(f"{spec.model_id}: {provider} 경로의 {payload.get('resolution')} 해상도는 Not Support입니다. 지원 해상도: {', '.join(supported)}")
     return payload, provider

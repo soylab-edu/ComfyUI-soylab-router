@@ -41,15 +41,23 @@ class CatalogTests(unittest.TestCase):
 
     def test_committed_price_references_have_sources_and_supported_routes(self):
         root = pathlib.Path(__file__).resolve().parents[1]
-        data = json.loads((root / "web/pricing.json").read_text(encoding="utf-8"))
+        data = json.loads((root / "web/router-data.json").read_text(encoding="utf-8"))
         self.assertEqual(data["currency"], "USD")
-        for model_id, providers in data["models"].items():
+        self.assertEqual(len(data["models"]), len(MODELS))
+        for model in data["models"]:
+            model_id = model["model_id"]
             self.assertIn(model_id, BY_ID)
-            for name, entry in providers.items():
+            self.assertEqual(model["display_name"], next(label for label, spec in BY_LABEL.items() if spec.model_id == model_id))
+            self.assertEqual(model["providers"][0]["name"], "Comfy")
+            for route in model["providers"]:
+                self.assertTrue(set(route.get("resolutions", ())).issubset(BY_ID[model_id].resolutions))
+            for name, entry in model["pricing"]["alternates"].items():
                 self.assertIn(name, ALT_PROVIDERS.get(model_id, ()))
                 self.assertTrue(entry["source"].startswith("https://"))
                 self.assertLessEqual(entry["checked_at"], data["updated_at"])
                 self.assertIs(entry["reference_inputs"], False)
+                if "range_scope" in entry:
+                    self.assertIn("range", entry)
                 rates = entry.get("rates") or entry.get("range")
                 self.assertTrue(rates)
                 self.assertTrue(all(float(rate) > 0 for rate in (rates.values() if isinstance(rates, dict) else rates)))
@@ -74,6 +82,17 @@ class PayloadTests(unittest.TestCase):
         spec = find_model("Runway", "Gen-4", "Turbo Video")
         with self.assertRaisesRegex(ValueError, "Not Support"):
             build_payload(spec, {"prompt": "move", "execution_provider": "fal"}, ["data:image/png;base64,AQ=="], [], [])
+
+    def test_seedance_alternate_resolution_limit(self):
+        spec = BY_ID["byteplus/dreamina-seedance-2-5-260628"]
+        with self.assertRaisesRegex(ValueError, "higgsfield.*1080p.*Not Support"):
+            build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "1080p"}, [], [], [])
+        with self.assertRaisesRegex(ValueError, "fal.*1080p.*Not Support"):
+            build_payload(spec, {"prompt": "move", "execution_provider": "fal", "resolution": "1080p"}, [], [], [])
+        payload, provider = build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "720p"}, [], [], [])
+        self.assertEqual((payload["resolution"], provider), ("720p", "higgsfield"))
+        with self.assertRaisesRegex(ValueError, "higgsfield.*1080p.*Not Support"):
+            build_payload(spec, {"prompt": "move", "execution_provider": "higgsfield", "resolution": "720p"}, [], [], [], '{"resolution":"1080p"}')
 
     def test_advanced_json_cannot_change_path_model(self):
         spec = find_model("OpenAI", "GPT Image", "2")

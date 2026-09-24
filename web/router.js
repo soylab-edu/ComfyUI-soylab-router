@@ -9,7 +9,7 @@ const HEADER_GRADIENT = `linear-gradient(90deg, ${HEADER_PURPLE} 0%, #3D6574 50%
 const BODY_BG = "#1E1B25";
 const FOOTER_BG = "#28173E";
 const COST_BUTTON_BG = "#422670";
-const COMFY_CREDITS_PER_USD = 211;
+let COMFY_CREDITS_PER_USD = NaN;
 const PRICE_HISTORY_KEY = "soylab.router.priceHistory.v1";
 const logo = new Image();
 const logoUrl = new URL("./soylab-logo.png", import.meta.url);
@@ -47,37 +47,49 @@ function rememberCost(node, spec, route, credits) {
   try { localStorage.setItem(PRICE_HISTORY_KEY, JSON.stringify(priceHistory)); } catch (_) {}
 }
 
+function routeResolutions(spec, route) {
+  return spec?.providers?.find((item) => item.name === route)?.resolutions || null;
+}
+
 function directReference(node, spec, route) {
   const entry = pricing.models?.[spec?.model_id]?.[route];
   if (!entry || refCount(node, "images") || refCount(node, "videos") || refCount(node, "audios") || entry.reference_inputs !== false) return null;
   const duration = Number(field(node, "duration", 0));
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", ""));
+  const supported = routeResolutions(spec, route);
+  if (supported && !supported.includes(resolution)) return null;
   if (!Number.isFinite(duration) || duration <= 0 || (entry.aspect_ratio && entry.aspect_ratio !== ratio)) return null;
   const range = entry.range || (Number.isFinite(entry.rates?.[resolution]) ? [entry.rates[resolution], entry.rates[resolution]] : null);
   if (!range) return null;
-  const rateDollars = (value) => `$${Number(value.toFixed(4))}`;
+  const rateDollars = (value) => `$${Number(value.toFixed(5))}`;
   const totalDollars = (value) => `$${value.toFixed(2)}`;
   const rateText = range[0] === range[1] ? rateDollars(range[0]) : `${rateDollars(range[0])}–${rateDollars(range[1])}`;
   const totalText = range[0] === range[1] ? totalDollars(range[0] * duration) : `${totalDollars(range[0] * duration)}–${totalDollars(range[1] * duration)}`;
   const credits = (value) => (value * COMFY_CREDITS_PER_USD).toFixed(1);
   const creditRateText = `${credits(range[0])}${range[0] === range[1] ? "" : `–${credits(range[1])}`} C`;
   const creditTotalText = `${credits(range[0] * duration)}${range[0] === range[1] ? "" : `–${credits(range[1] * duration)}`} C`;
-  return { rateText, totalText, creditRateText, creditTotalText, source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
+  return { rateText, totalText, creditRateText, creditTotalText, rangeScope: entry.range_scope || "", source: entry.source, checkedAt: entry.checked_at, note: entry.note, approximate: !!entry.approximate };
 }
 
-fetch(new URL("./catalog.json", import.meta.url))
-  .then((response) => response.ok ? response.json() : [])
-  .then((items) => {
-    catalog = items;
-    app.graph?.setDirtyCanvas?.(true, true);
-    for (const node of app.graph?._nodes || []) if (node.type === NODE_ID) queueVueSync(node.id);
-  })
-  .catch(() => {});
-fetch(new URL("./pricing.json", import.meta.url), { cache: "no-store" })
-  .then((response) => response.ok ? response.json() : { models: {} })
+function directResolutionNotice(node, spec, route) {
+  const entry = pricing.models?.[spec?.model_id]?.[route];
+  const resolution = String(field(node, "resolution", ""));
+  const supported = routeResolutions(spec, route);
+  return entry && supported && !supported.includes(resolution)
+    ? `${route} 직결 API는 ${resolution} 미지원 (공개 범위 ${supported.join("·")})`
+    : "";
+}
+
+fetch(new URL("./router-data.json", import.meta.url), { cache: "no-store" })
+  .then((response) => response.ok ? response.json() : null)
   .then((data) => {
-    pricing = data;
+    if (!data || !Array.isArray(data.models)) return;
+    COMFY_CREDITS_PER_USD = Number(data.comfy_credits_per_usd);
+    if (!Number.isFinite(COMFY_CREDITS_PER_USD) || COMFY_CREDITS_PER_USD <= 0) throw new Error("router-data.json: comfy_credits_per_usd is invalid");
+    catalog = data.models.map((item) => ({ ...item, alternates: item.providers.filter((route) => route.name !== "Comfy").map((route) => route.name) }));
+    pricing = { updated_at: data.updated_at, models: Object.fromEntries(catalog.map((item) => [item.model_id, item.pricing?.alternates || {}])) };
+    app.graph?.setDirtyCanvas?.(true, true);
     for (const node of app.graph?._nodes || []) if (node.type === NODE_ID) queueVueSync(node.id);
   })
   .catch(() => {});
@@ -87,8 +99,7 @@ function widget(node, name) {
 }
 
 function modelLabel(spec) {
-  const brand = spec.family === "Seedance" ? "BytePlus" : spec.service;
-  return `${brand} ${spec.family} ${spec.version}`;
+  return spec.display_name || `${spec.service} ${spec.family} ${spec.version}`;
 }
 
 function inputPrefix(node) {
@@ -118,119 +129,85 @@ function usd(value) {
 }
 
 function comfyQuote(node, spec) {
-  if (!spec) return null;
-  const id = spec.model_id;
+  const rule = spec?.pricing?.comfy;
+  if (!rule) return null;
   const duration = Number(field(node, "duration", 5));
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", "16:9"));
   const hasVideo = refCount(node, "videos") > 0;
   const credits = (value) => value * COMFY_CREDITS_PER_USD;
-  if (id === "runway/gen4_turbo") {
-    return { perSecond: credits(.0715), total: credits(.0715 * duration), source: "Comfy Partner node" };
+  if (rule.type === "usd_per_second") {
+    return { perSecond: credits(rule.rate), total: credits(rule.rate * duration), source: rule.source };
   }
-  if (!id.includes("dreamina-seedance-2-")) return null;
-  if (id.includes("dreamina-seedance-2-5")) {
-    const is480 = resolution === "480p";
-    const is1080 = resolution === "1080p";
-    const frameSizes = {
-      "1:1": [400, 900, 2025],
-      "4:3": [411.25, 905.6719, 2028],
-      "3:4": [411.25, 905.6719, 2028],
-      "21:9": [418.5, 904.3945, 2037.9648],
-    };
-    const frame = (frameSizes[ratio] || [400.3125, 900, 2025])[is480 ? 0 : is1080 ? 2 : 1];
-    const unitPrice = is1080 ? (hasVideo ? .01001 : .016731) : (hasVideo ? .009152 : .015301);
-    const totalFor = (seconds) => credits(Math.floor(frame * (24 * seconds + 1)) / 1000 * unitPrice);
-    return {
-      perSecond: credits(frame * 24 / 1000 * unitPrice),
-      total: totalFor(duration),
-      maxTotal: hasVideo ? totalFor(duration + 30) : null,
-      source: "Comfy Partner node",
-    };
+  if (rule.type === "usd_per_run" || rule.type === "usd_by_resolution" || rule.type === "usd_by_quality_resolution") {
+    const quality = String(field(node, "quality", "low"));
+    const rate = rule.type === "usd_per_run" ? rule.rate
+      : rule.type === "usd_by_resolution" ? rule.rates?.[resolution]
+      : rule.rates?.[quality]?.[resolution];
+    if (!Number.isFinite(rate)) return null;
+    const imageReferences = rule.reference_image_usd ? refCount(node, "images") * rule.reference_image_usd : 0;
+    return { total: credits(rate + imageReferences), source: rule.source };
   }
-  const frameRate = resolution === "4k" ? 195200 : resolution === "1080p" ? 48800 : resolution === "720p" ? 21600 : 10044;
-  const noVideoPrice = resolution === "4k" ? .00572 : resolution === "1080p" ? .011011 : id.includes("mini") ? .005005 : id.includes("fast") ? .008008 : .01001;
-  const videoPrice = resolution === "4k" ? .003432 : resolution === "1080p" ? .006721 : id.includes("mini") ? .003003 : id.includes("fast") ? .004719 : .006149;
-  const unitPrice = hasVideo ? videoPrice : noVideoPrice;
+  if (rule.type !== "video_tokens") return null;
+  const tokenRate = rule.credits_per_1k?.[hasVideo ? "video" : "no_video"]?.[resolution];
+  if (!Number.isFinite(tokenRate)) return null;
+  const frameIndex = rule.resolution_order?.indexOf(resolution) ?? -1;
+  const frame = frameIndex < 0 ? null : (rule.frame_tokens_per_frame?.[ratio] || rule.frame_tokens_per_frame?.default)?.[frameIndex];
+  let tokensPerSecond = Number.isFinite(frame) ? frame * rule.fps : rule.tokens_per_second?.[resolution];
+  if (!Number.isFinite(tokensPerSecond) && rule.short_side_pixels?.[resolution]) {
+    const dimensions = ratio.match(/^(\d+):(\d+)$/);
+    if (!dimensions) return null;
+    const widthRatio = Number(dimensions[1]);
+    const heightRatio = Number(dimensions[2]);
+    const shortSide = rule.short_side_pixels[resolution];
+    const width = widthRatio >= heightRatio ? Math.round(shortSide * widthRatio / heightRatio) : shortSide;
+    const height = widthRatio >= heightRatio ? shortSide : Math.round(shortSide * heightRatio / widthRatio);
+    const evenWidth = width - width % 2;
+    const evenHeight = height - height % 2;
+    tokensPerSecond = evenWidth * evenHeight * rule.fps / 1024;
+  }
+  if (!Number.isFinite(tokensPerSecond)) return null;
+  const perSecond = tokensPerSecond / 1000 * tokenRate;
+  const totalFor = (seconds) => rule.total_token_round === "floor_plus_one_frame"
+    ? Math.floor(frame * (rule.fps * seconds + 1)) / 1000 * tokenRate
+    : perSecond * seconds;
+  const billedSeconds = hasVideo && rule.video_billed_seconds_factor
+    ? Math.ceil(duration * rule.video_billed_seconds_factor) : duration;
   return {
-    perSecond: credits(frameRate * unitPrice / 1000),
-    total: credits((hasVideo ? Math.ceil(duration * 5 / 3) : duration) * frameRate * unitPrice / 1000),
-    maxTotal: hasVideo ? credits((15 + duration) * frameRate * unitPrice / 1000) : null,
-    source: "Comfy Partner node",
+    perSecond,
+    total: totalFor(billedSeconds),
+    maxTotal: hasVideo && rule.video_max_extra_seconds ? totalFor(duration + rule.video_max_extra_seconds) : null,
+    source: rule.source,
   };
 }
 
 function estimate(node, spec) {
   if (!spec) return { provider: "", comfy: "모델을 선택하세요" };
   const duration = Number(field(node, "duration", 5));
-  const resolution = String(field(node, "resolution", ""));
-  const quality = String(field(node, "quality", "low"));
   const execution = String(field(node, "execution_provider", "Comfy"));
-  const id = spec.model_id;
-  let direct = null;
-  let comfyUsd = null;
-  let comfyRange = null;
-  if (id === "runway/gen4_turbo") {
-    direct = 0.05 * duration; // Runway Dev: 5 credits/s, $0.01/credit.
-    comfyUsd = 0.0715 * duration;
-  } else if (id === "runway/gen4_image") {
-    // The ratio label alone is insufficient to determine Runway's 720p/1080p
-    // billing tier for every aspect ratio, so show the official price range.
-    direct = "$0.05–$0.08";
-    comfyUsd = 0.11;
-  } else if (id === "runway/aleph2") {
-    // Input video length determines the total charge.
-    direct = "$0.28/초";
-    comfyUsd = null;
-  } else if (id === "byteplus/seedream-5-0-pro-260628") {
-    comfyUsd = resolution === "2K" ? 0.09 : 0.045;
-  } else if (id === "byteplus/seedream-5-0-260128") {
-    comfyUsd = 0.035;
-  } else if (id === "vertexai/gemini-3.1-flash-image") {
-    comfyUsd = { "1K": 0.0835, "2K": 0.1217, "4K": 0.1848 }[resolution];
-  } else if (id === "vertexai/gemini-3.1-flash-lite-image") {
-    comfyUsd = 0.0835;
-  } else if (id === "vertexai/gemini-3-pro-image") {
-    comfyUsd = resolution === "4K" ? 0.288 : 0.1608;
-  } else if (id.startsWith("openai/gpt-image-2")) {
-    const is25 = id.includes("2.5");
-    const table = is25
-      ? { low: { "1024x1024": .0084, "2048x2048": .017 }, medium: { "1024x1024": .0188, "2048x2048": .0383 }, high: { "1024x1024": .0753, "2048x2048": .1531 }, xhigh: { "1024x1024": .1339, "2048x2048": .2721 }, max: { "1024x1024": .3013, "2048x2048": .6123 } }
-      : { low: { "1024x1024": .0071, "2048x2048": .0143 }, medium: { "1024x1024": .0632, "2048x2048": .1284 }, high: { "1024x1024": .2529, "2048x2048": .5138 } };
-    comfyUsd = table[quality]?.[resolution] ?? null;
-    if (comfyUsd !== null) comfyUsd += refCount(node, "images") * (is25 ? .0117 : .0098);
-  } else if (id.includes("dreamina-seedance-2-5")) {
-    const quote = comfyQuote(node, spec);
-    comfyRange = quote ? [quote.total / COMFY_CREDITS_PER_USD, (quote.maxTotal ?? quote.total) / COMFY_CREDITS_PER_USD] : null;
-  } else if (id.includes("dreamina-seedance-2-0")) {
-    const quote = comfyQuote(node, spec);
-    comfyRange = quote ? [quote.total / COMFY_CREDITS_PER_USD, (quote.maxTotal ?? quote.total) / COMFY_CREDITS_PER_USD] : null;
-  }
+  const maker = spec.pricing?.maker;
+  const makerPrice = maker?.type === "usd_per_second" ? usd(maker.rate * duration) : maker?.value || "";
+  const quote = comfyQuote(node, spec);
   const actual = node.properties?.soylabActualCredits;
-  const providerText = direct === null ? "" : `${spec.service} API 참고 ${typeof direct === "string" ? direct : usd(direct)}`;
+  const providerText = makerPrice ? `${spec.service} API 참고 ${makerPrice}` : "";
   let comfyText = "Comfy 예상 확인 불가";
   const observed = observedCost(node, spec, execution);
   const directRef = execution === "Comfy" ? null : directReference(node, spec, execution);
+  const resolutionNotice = execution === "Comfy" ? "" : directResolutionNotice(node, spec, execution);
   if (actual != null && Number.isFinite(Number(actual)) && node.properties?.soylabActualSignature === priceSignature(node, spec, execution)) {
     comfyText = `Comfy 실제 ${Number(actual).toFixed(2)} C`;
   } else if (execution !== "Comfy" && observed) {
     comfyText = `${execution} 최근 실측 ${observed.credits.toFixed(1)} C`;
   } else if (execution !== "Comfy") {
     comfyText = directRef
-      ? `${execution} 직결가 환산 약 ${directRef.creditRateText}/초`
-      : `${execution} Router 사전 단가 미공개`;
-  } else if (comfyUsd !== null && Number.isFinite(comfyUsd)) {
-    comfyText = `Comfy 약 ${(comfyUsd * COMFY_CREDITS_PER_USD).toFixed(1)} C`;
-  } else if (comfyRange) {
-    const low = (comfyRange[0] * COMFY_CREDITS_PER_USD).toFixed(0);
-    const high = (comfyRange[1] * COMFY_CREDITS_PER_USD).toFixed(0);
+      ? `${execution} ${directRef.rangeScope ? "공개 범위 환산" : "직결가 환산 약"} ${directRef.creditRateText}/초`
+      : resolutionNotice || `${execution} Router 사전 단가 미공개`;
+  } else if (quote) {
+    const low = quote.total.toFixed(1);
+    const high = quote.maxTotal == null ? low : quote.maxTotal.toFixed(1);
     comfyText = `Comfy 약 ${low}${low === high ? "" : `–${high}`} C`;
   }
-  return {
-    provider: providerText,
-    comfy: comfyText,
-    estimatedCredits: Number.isFinite(comfyUsd) ? comfyUsd * COMFY_CREDITS_PER_USD : comfyRange ? comfyRange[0] * COMFY_CREDITS_PER_USD : null,
-  };
+  return { provider: providerText, comfy: comfyText, estimatedCredits: quote?.total ?? null };
 }
 
 let pricePopup = null;
@@ -253,6 +230,7 @@ function refreshPricePopup() {
   const estimateInfo = estimate(node, spec);
   const observed = observedCost(node, spec, route);
   const directRef = directReference(node, spec, route);
+  const resolutionNotice = directResolutionNotice(node, spec, route);
   const duration = Number(field(node, "duration", 5));
   const resolution = String(field(node, "resolution", ""));
   const ratio = String(field(node, "ratio", ""));
@@ -285,8 +263,10 @@ function refreshPricePopup() {
   const selectedRate = route !== "Comfy" && observed
     ? `최근 같은 설정 ${priceText(observed.credits)}`
     : route !== "Comfy" && directRef
-      ? `직결 ${directRef.totalText} · 직결가 환산 약 ${directRef.creditTotalText}`
-    : route === "Comfy" && quote
+      ? `${directRef.rangeScope || "직결가"} ${directRef.totalText} · ${directRef.rangeScope ? "범위 환산" : "직결가 환산 약"} ${directRef.creditTotalText}`
+    : resolutionNotice
+      ? resolutionNotice
+    : route === "Comfy" && Number.isFinite(quote?.perSecond)
     ? `${priceText(quote.perSecond)}/초`
     : route === "Comfy" && Number.isFinite(estimateInfo.estimatedCredits)
       ? `약 ${priceText(estimateInfo.estimatedCredits)}/회`
@@ -310,19 +290,21 @@ function refreshPricePopup() {
     const estimated = provider === "Comfy" && Number.isFinite(estimateInfo.estimatedCredits);
     const recent = observedCost(node, spec, provider);
     const outside = directReference(node, spec, provider);
-    const rate = known ? `Comfy ${priceText(quote.perSecond)}/초` : estimated ? `Comfy 약 ${priceText(estimateInfo.estimatedCredits)}/회` : outside ? `직결 ${outside.rateText}/초 · ${outside.totalText} 참고` : "공개 참고 없음";
+    const outsideNotice = directResolutionNotice(node, spec, provider);
+    const outsideSource = pricing.models?.[spec.model_id]?.[provider];
+    const rate = known && Number.isFinite(quote.perSecond) ? `Comfy ${priceText(quote.perSecond)}/초` : estimated ? `Comfy 약 ${priceText(estimateInfo.estimatedCredits)}/회` : outside ? `${outside.rangeScope || "직결"} ${outside.rateText}/초 · ${outside.totalText} 참고` : outsideNotice || "공개 참고 없음";
     const total = known
       ? quote.maxTotal == null ? `약 ${priceText(quote.total)}` : `약 ${priceText(quote.total)}–${priceText(quote.maxTotal)}`
-      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : outside ? `직결가 환산 약 ${outside.creditTotalText}` : "사전 요금 미공개";
+      : estimated ? `약 ${priceText(estimateInfo.estimatedCredits)}` : recent ? `최근 실측 ${priceText(recent.credits)}` : outside ? `${outside.rangeScope ? "공개 범위 환산" : "직결가 환산 약"} ${outside.creditTotalText}` : "사전 요금 미공개";
     row.append(line("td", "", provider));
     const rateCell = line("td", "", rate);
-    if (outside?.source) {
+    if ((outside || outsideNotice) && outsideSource?.source) {
       const link = document.createElement("a");
-      link.href = outside.source;
+      link.href = outsideSource.source;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       link.textContent = " ↗";
-      link.title = `업체 직접 API 가격 출처 · 확인일 ${outside.checkedAt}`;
+      link.title = `업체 직접 API 가격 출처 · 확인일 ${outsideSource.checked_at}`;
       rateCell.append(link);
     }
     row.append(rateCell, line("td", "", total));
@@ -433,9 +415,13 @@ function syncVueNode(id) {
   const price = estimate(node, spec);
   const label = [price.provider, price.comfy].filter(Boolean).join("  |  ");
   if (badge.textContent !== label) badge.textContent = label;
-  badge.title = price.comfy.includes("직결가 환산")
-    ? "외부 직접 API 가격을 $1 = 211 Comfy 크레딧으로 환산한 참고값입니다. 실제 Router 청구액은 실행 후 확인하세요."
-    : "Router 실행 공급자별 비용 비교 열기";
+  const selectedRoute = String(field(node, "execution_provider", "Comfy"));
+  const selectedReference = selectedRoute === "Comfy" ? null : directReference(node, spec, selectedRoute);
+  badge.title = price.comfy.includes("공개 범위 환산")
+    ? `${selectedReference?.rangeScope || "공개 가격 범위"}입니다. 선택한 해상도의 확정 단가가 아닙니다. 실제 Router 청구액은 실행 후 확인하세요.`
+    : price.comfy.includes("직결가 환산")
+      ? `외부 직접 API 가격을 $1 = ${COMFY_CREDITS_PER_USD} Comfy 크레딧으로 환산한 참고값입니다. 실제 Router 청구액은 실행 후 확인하세요.`
+      : "Router 실행 공급자별 비용 비교 열기";
 
   const providerRow = host.querySelector('[aria-label="execution_provider"]')?.closest(".lg-node-widget");
   if (providerRow) {
@@ -449,12 +435,17 @@ function syncVueNode(id) {
     const quote = comfyQuote(node, spec);
     const observed = observedCost(node, spec, route);
     const directRef = directReference(node, spec, route);
-    const rate = route === "Comfy" && quote
+    const resolutionNotice = directResolutionNotice(node, spec, route);
+    const rate = route === "Comfy" && Number.isFinite(quote?.perSecond)
       ? `Comfy 예상 ${priceText(quote.perSecond)}/초 · 자세한 비용은 위 가격 버튼`
+      : route === "Comfy" && quote
+        ? `Comfy 예상 ${priceText(quote.total)}/회 · 자세한 비용은 위 가격 버튼`
       : route !== "Comfy" && observed
         ? `${route} 최근 같은 설정 ${priceText(observed.credits)} · 사전 단가는 미공개`
         : route !== "Comfy" && directRef
-          ? `${route} 직결 ${directRef.rateText}/초 · 직결가 환산 약 ${directRef.creditRateText}/초`
+          ? `${route} ${directRef.rangeScope || "직결"} ${directRef.rateText}/초 · ${directRef.rangeScope ? "범위 환산" : "직결가 환산 약"} ${directRef.creditRateText}/초`
+        : resolutionNotice
+          ? `${resolutionNotice} · Router 실제 요금은 실행 후 확인`
         : route !== "Comfy" && quote
           ? `${route} 사전 단가 미공개 · Comfy 기준 약 ${priceText(quote.total)} (선택 경로 요금 아님)`
           : `${route} 사전 단가 미공개 · 공식 가격표 링크는 비용 창에서 확인`;

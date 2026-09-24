@@ -9,15 +9,12 @@ from uuid import uuid4
 
 from comfy_api.latest import IO, ComfyExtension
 
-from .catalog import ALT_PROVIDERS, BY_LABEL, BY_LEGACY_LABEL, MODELS, model_label
+from .catalog import ALT_PROVIDERS, BY_LABEL, BY_LEGACY_LABEL, DEFAULT_EXECUTION_PROVIDER, DEFAULT_MODEL_ID, MODELS, model_label
 from .media import audio_from_bytes, audio_wav_bytes, image_data_uri, image_from_bytes, video_bytes, video_from_bytes
 from .payload import build_payload
 from .result import media_reference
 from .router import RouterError, download_asset, run_model, upload_asset
 
-
-DEFAULT_MODEL_ID = "byteplus/dreamina-seedance-2-5-260628"
-DEFAULT_EXECUTION_PROVIDER = "higgsfield"
 
 WEB_DIRECTORY = "./web"
 ROOT = Path(__file__).resolve().parent
@@ -72,9 +69,8 @@ def _model_inputs(spec):
         inputs.append(IO.Int.Input("seed", default=0, min=0, max=4294967295))
     if spec.adapter == "seedance":
         inputs.append(IO.Boolean.Input("generate_audio", default=True, tooltip="영상에 오디오 생성"))
-    if spec.adapter == "gpt_image":
-        qualities = ["low", "medium", "high"] if spec.version == "2" else ["low", "medium", "high", "xhigh", "max"]
-        inputs.append(IO.Combo.Input("quality", options=qualities, default="low"))
+    if spec.qualities:
+        inputs.append(IO.Combo.Input("quality", options=list(spec.qualities), default=spec.qualities[0]))
     inputs.extend(_media_inputs(spec))
     return inputs
 

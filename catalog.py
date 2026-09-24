@@ -1,12 +1,14 @@
-"""Curated Comfy Router model metadata used to build native ComfyUI controls.
+"""Comfy Router model metadata loaded from the single editable data file."""
 
-Canonical IDs and request shapes are checked against the per-model OpenAPI
-documents at https://docs.comfy.org/router-schemas/<provider>/<model>.json.
-Limits that do not appear as maxItems in those schemas follow the matching
-ComfyUI Partner node definitions; see README.md for source links.
-"""
+import json
+from dataclasses import dataclass, fields
+from pathlib import Path
 
-from dataclasses import dataclass
+
+DATA_PATH = Path(__file__).resolve().parent / "web" / "router-data.json"
+DATA = json.loads(DATA_PATH.read_text(encoding="utf-8"))
+if DATA.get("schema_version") != 1:
+    raise ValueError(f"Unsupported router-data.json schema: {DATA.get('schema_version')}")
 
 
 @dataclass(frozen=True)
@@ -23,53 +25,41 @@ class ModelSpec:
     resolutions: tuple[str, ...] = ()
     ratios: tuple[str, ...] = ()
     durations: tuple[int, ...] = ()
+    qualities: tuple[str, ...] = ()
     requires_image: bool = False
     requires_video: bool = False
     supports_audio_only: bool = False
+    display_name: str = ""
 
 
-MODELS = (
-    ModelSpec("Runway", "Gen-4", "Turbo Video", "runway/gen4_turbo", "runway_video", "VIDEO", 1, resolutions=("1280:720", "720:1280", "1104:832", "832:1104", "960:960", "1584:672", "1280:768", "768:1280"), durations=(5, 10), requires_image=True),
-    ModelSpec("Runway", "Gen-4", "Image", "runway/gen4_image", "runway_image", "IMAGE", 3, resolutions=("1920:1080", "1080:1920", "1024:1024", "1360:768", "1080:1080", "1168:880", "1440:1080", "1080:1440", "1808:768", "2112:912")),
-    ModelSpec("Runway", "Aleph", "2", "runway/aleph2", "runway_aleph", "VIDEO", 5, 1, requires_video=True),
-    ModelSpec("Dreamina", "Seedance", "2.5", "byteplus/dreamina-seedance-2-5-260628", "seedance", "VIDEO", 30, 10, 10, ("480p", "720p", "1080p"), ("16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "adaptive"), tuple(range(4, 31)), supports_audio_only=True),
-    ModelSpec("Dreamina", "Seedance", "2.0", "byteplus/dreamina-seedance-2-0-260128", "seedance", "VIDEO", 9, 3, 3, ("480p", "720p", "1080p", "4k"), ("16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "adaptive"), tuple(range(4, 16))),
-    ModelSpec("Dreamina", "Seedance", "2.0 Fast", "byteplus/dreamina-seedance-2-0-fast-260128", "seedance", "VIDEO", 9, 3, 3, ("480p", "720p"), ("16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "adaptive"), tuple(range(4, 16))),
-    ModelSpec("Dreamina", "Seedance", "2.0 Mini", "byteplus/dreamina-seedance-2-0-mini", "seedance", "VIDEO", 9, 3, 3, ("480p", "720p"), ("16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "adaptive"), tuple(range(4, 16))),
-    ModelSpec("Dreamina", "Seedream", "5.0 Pro", "byteplus/seedream-5-0-pro-260628", "seedream", "IMAGE", 10, resolutions=("1K", "2K")),
-    ModelSpec("Dreamina", "Seedream", "5.0 Lite", "byteplus/seedream-5-0-260128", "seedream", "IMAGE", 14, resolutions=("2K", "3K")),
-    ModelSpec("OpenAI", "GPT Image", "2", "openai/gpt-image-2", "gpt_image", "IMAGE", 16, resolutions=("auto", "1024x1024", "1024x1536", "1536x1024", "2048x2048", "2048x1152", "1152x2048", "3840x2160", "2160x3840")),
-    ModelSpec("OpenAI", "GPT Image", "2.5 Flare", "openai/gpt-image-2.5-flare", "gpt_image", "IMAGE", 16, resolutions=("auto", "1024x1024", "1024x1536", "1536x1024", "2048x2048", "2048x1152", "1152x2048", "3840x2160", "2160x3840")),
-    ModelSpec("OpenAI", "GPT Image", "2.5 Sunburst", "openai/gpt-image-2.5-sunburst", "gpt_image", "IMAGE", 16, resolutions=("auto", "1024x1024", "1024x1536", "1536x1024", "2048x2048", "2048x1152", "1152x2048", "3840x2160", "2160x3840")),
-    ModelSpec("Google", "Nano Banana", "2", "vertexai/gemini-3.1-flash-image", "gemini_image", "IMAGE", 14, resolutions=("1K", "2K", "4K"), ratios=("auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9")),
-    ModelSpec("Google", "Nano Banana", "2 Lite", "vertexai/gemini-3.1-flash-lite-image", "gemini_image", "IMAGE", 14, resolutions=("1K",), ratios=("auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9")),
-    ModelSpec("Google", "Nano Banana", "Pro", "vertexai/gemini-3-pro-image", "gemini_image", "IMAGE", 16, resolutions=("1K", "2K", "4K"), ratios=("auto", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9")),
-    ModelSpec("BytePlus Audio", "Seed Audio", "1.0", "byteplus/seed-audio-1.0", "seed_audio", "AUDIO", 1, 0, 3),
-    ModelSpec("BytePlus Audio", "Seed Audio", "1.0 Multilingual", "byteplus/seed-audio-1.0-multilingual", "seed_audio", "AUDIO", 1, 0, 3),
-)
+def _model(row: dict) -> ModelSpec:
+    allowed = {item.name for item in fields(ModelSpec)}
+    values = {key: value for key, value in row.items() if key in allowed}
+    for name in ("resolutions", "ratios", "durations", "qualities"):
+        values[name] = tuple(values.get(name) or ())
+    return ModelSpec(**values)
 
+
+MODELS = tuple(_model(row) for row in DATA["models"])
 BY_ID = {spec.model_id: spec for spec in MODELS}
 BY_SELECTION = {(spec.service, spec.family, spec.version): spec for spec in MODELS}
+DEFAULT_MODEL_ID = DATA["default_model_id"]
+DEFAULT_EXECUTION_PROVIDER = DATA["default_provider"]
 
 
 def model_label(spec: ModelSpec) -> str:
-    brand = "BytePlus" if spec.family == "Seedance" else spec.service
-    return f"{brand} {spec.family} {spec.version}"
+    return spec.display_name or f"{spec.service} {spec.family} {spec.version}"
 
 
 BY_LABEL = {model_label(spec): spec for spec in MODELS}
 BY_LEGACY_LABEL = {f"{spec.service} / {spec.family} {spec.version}": spec for spec in MODELS}
-
-# The per-model OpenAPI documents advertise these under
-# x-comfy-router-alt-providers. An empty entry means Comfy is the only route.
 ALT_PROVIDERS = {
-    "byteplus/dreamina-seedance-2-5-260628": ("fal", "higgsfield", "runware", "wavespeed"),
-    "byteplus/dreamina-seedance-2-0-260128": ("fal", "higgsfield", "runware", "wavespeed"),
-    "openai/gpt-image-2": ("fal", "runware", "wavespeed"),
-    "openai/gpt-image-2.5-flare": ("fal", "runware", "wavespeed"),
-    "openai/gpt-image-2.5-sunburst": ("fal", "runware", "wavespeed"),
-    "vertexai/gemini-3.1-flash-image": ("fal", "runware", "wavespeed"),
-    "vertexai/gemini-3-pro-image": ("fal", "runware", "wavespeed"),
+    row["model_id"]: tuple(route["name"] for route in row["providers"] if route["name"] != "Comfy")
+    for row in DATA["models"]
+}
+ALT_PROVIDER_RESOLUTIONS = {
+    (row["model_id"], route["name"]): tuple(route["resolutions"])
+    for row in DATA["models"] for route in row["providers"] if route.get("resolutions")
 }
 
 
